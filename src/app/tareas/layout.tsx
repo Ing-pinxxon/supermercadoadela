@@ -1,0 +1,31 @@
+import Link from "next/link";
+
+export default function TareasLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3">
+          <Link href="/" className="text-sm font-bold">
+            Adela
+          </Link>
+          <nav className="flex gap-4 text-sm text-gray-600">
+            <Link href="/tareas" className="hover:text-gray-900">
+              Hoy
+            </Link>
+            <Link href="/tareas/semana" className="hover:text-gray-900">
+              Semana
+            </Link>
+            <Link href="/tareas/rutina" className="hover:text-gray-900">
+              Rutina
+            </Link>
+          </nav>
+        </div>
+      </header>
+      <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+    </div>
+  );
+}
