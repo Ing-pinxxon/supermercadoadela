@@ -30,6 +30,12 @@ export default function Inicio() {
           </p>
         </Link>
       </div>
+
+      <p className="mt-8 text-center text-xs text-gray-400">
+        <Link href="/instalar" className="hover:underline">
+          Estado de la base de datos
+        </Link>
+      </p>
     </main>
   );
 }

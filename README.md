@@ -36,7 +36,43 @@ npm run db:setup          # crea tablas y carga la rutina de tareas de ejemplo
 npm run dev               # http://localhost:3000
 ```
 
-`db:setup` se puede correr las veces que sea: no borra ni duplica nada.
+`db:setup` se puede correr las veces que sea: no borra ni duplica nada. Lo
+mismo se puede hacer desde el navegador en `/instalar`, sin consola.
+
+## Desplegar en Vercel con Neon
+
+1. Sube el repo a GitHub y en Vercel haz **Add New → Project → Import**.
+2. En el proyecto, pestaña **Storage → Create Database → Neon** (o *Connect*
+   una que ya tengas). Neon queda conectada y Vercel escribe las variables de
+   conexión solas.
+3. Pestaña **Settings → Environment Variables**: agrega `APP_PIN` con la clave
+   del negocio.
+4. **Deployments → Redeploy.** Las variables solo entran en un despliegue nuevo:
+   si conectaste la base después de desplegar, este paso es obligatorio.
+5. Abre `https://tu-app.vercel.app/instalar`, entra con la clave y dale a
+   **Crear tablas y rutina**. Si quieres las 26 semanas de la hoja vieja,
+   dale también a **Cargar histórico**.
+
+La app no lee ninguna variable en el build: si algo falla, falla en `/instalar`,
+que dice exactamente qué es.
+
+### Si algo sale mal
+
+Todo se diagnostica en `/instalar`, que muestra qué variable se está usando,
+contra qué servidor habla, qué tablas hay y cuántas filas tiene cada cosa.
+
+- **«No hay ninguna variable de conexión»** → la base no está conectada al
+  proyecto, o se conectó después del último despliegue. Conecta y **Redeploy**.
+- **«La base rechazó el usuario o la clave»** → vuelve a copiar la cadena desde
+  Neon (*Connection string*, la versión **pooled**).
+- **Faltan tablas** → dale a **Crear tablas y rutina**. Es la causa más común
+  del error al abrir `/caja` o `/tareas` recién desplegado: la conexión está
+  bien, pero la base está vacía.
+- **La base tarda en responder la primera vez** → los proyectos gratis de Neon
+  se duermen. Vuelve a cargar la página.
+
+Se aceptan tanto `DATABASE_URL` como los nombres que crea la integración de
+Neon (`POSTGRES_URL`, `DATABASE_URL_UNPOOLED`, …); `/instalar` dice cuál tomó.
 
 ## Desplegar en Railway
 
@@ -46,7 +82,8 @@ npm run dev               # http://localhost:3000
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
    - `APP_PIN` = la clave del negocio.
 4. Railway detecta Next.js solo. Build: `npm run build`, start: `npm start`.
-5. Una sola vez, para crear las tablas: `railway run npm run db:setup`.
+5. Una sola vez, para crear las tablas: `railway run npm run db:setup` (o abre
+   `/instalar` en la app y dale al botón).
 
 La app queda detrás de una clave única compartida (`APP_PIN`, cookie de un mes).
 No son cuentas por persona: es para que la URL no quede abierta a internet.
@@ -94,7 +131,8 @@ Dos cosas honestas sobre esos datos:
   y las gráficas usan los números de la hoja, que son los que usaste en su
   momento; el detalle por concepto sirve para ver tendencias, no para cuadrar.
 
-Para volver a importar:
+Para volver a importar: el botón **Cargar histórico** de `/instalar`, o desde
+la consola:
 
 ```bash
 node import/importar.mjs             # simulación, no escribe
@@ -104,13 +142,16 @@ node import/importar.mjs --escribir
 ## Estructura
 
 ```
-db/schema.sql        Las tablas. Fuente de verdad del modelo de datos.
+src/lib/esquema.ts   Las tablas. Fuente de verdad del modelo de datos.
+src/lib/rutina.ts    La rutina semanal con la que arranca el módulo de tareas.
+src/lib/instalacion.ts  Diagnóstico y puesta en marcha de la base (/instalar).
 db/setup.ts          Crea tablas + rutina de tareas (npm run db:setup).
 db/verificar.ts      Prueba de la aritmética contra una base real.
 e2e.mjs              Prueba de navegador de los formularios.
 import/parser.mjs    Lee la hoja de cálculo. El ANCLA de fechas está acá.
-import/importar.mjs  Carga el archivo histórico en la base.
+import/importar.mjs  Carga el archivo histórico en la base (versión de consola).
 import/hoja.json     La exportación de la hoja "TIENDA".
+src/app/instalar/    Pantalla de estado de la base, protegida por la clave.
 src/lib/db.ts        Pool de conexiones y helpers de consulta.
 src/lib/fechas.ts    Fechas como texto "YYYY-MM-DD". Lee el comentario de arriba.
 src/lib/caja.ts      TODA la aritmética de caja vive aquí.
@@ -123,6 +164,9 @@ Tres decisiones que conviene no romper:
 
 - **Los montos son enteros en pesos.** El peso no usa centavos, así que no hay
   decimales ni redondeos en ninguna parte.
+- **El esquema vive en `src/lib/esquema.ts`, no en un `.sql` suelto.** Vercel
+  solo despliega los archivos que el código importa, y así la pantalla
+  `/instalar` puede crear las tablas sin consola.
 - **Las fechas son strings `YYYY-MM-DD`, nunca `Date`.** El servidor corre en
   UTC y Bogotá es UTC−5: si se usa `new Date()` para calcular "hoy", entre las
   7 p.m. y la medianoche la app registra el día siguiente. `src/lib/fechas.ts`

@@ -1,3 +1,14 @@
+/**
+ * El esquema de la base, tal cual. Fuente de verdad del modelo de datos.
+ *
+ * Antes esto era `db/schema.sql`. Está aquí como texto de TypeScript para que
+ * también viaje dentro del paquete que se despliega (Vercel solo sube lo que el
+ * código importa, y un `.sql` suelto no lo importa nadie): así la pantalla
+ * `/instalar` puede crear las tablas desde la app misma, sin CLI.
+ *
+ * Es idempotente: se puede correr las veces que sea.
+ */
+export const ESQUEMA_SQL = `
 -- Esquema de Supermercado Adela.
 -- Es idempotente: se puede correr las veces que sea (npm run db:setup).
 -- Todos los montos son enteros en pesos; el peso colombiano no usa centavos.
@@ -93,3 +104,4 @@ CREATE TABLE IF NOT EXISTS tarea_hecha (
 );
 
 CREATE INDEX IF NOT EXISTS tarea_hecha_fecha_idx ON tarea_hecha (fecha);
+`;
