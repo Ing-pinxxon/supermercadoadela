@@ -52,8 +52,8 @@ export default async function SemanaCaja({
     <div className="escalonado space-y-5">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">Semana</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="display text-2xl font-black">Semana</h1>
+          <p className="text-sm text-tinta-suave">
             {etiquetaCorta(lunes)} — {etiquetaCorta(domingo)}
           </p>
         </div>
@@ -88,7 +88,7 @@ export default async function SemanaCaja({
           <div className="tabular text-2xl font-bold">
             {pesos(r.totales.totalVendido)}
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-tinta-suave">
             el ingreso bruto más la venta que entró por transferencia
           </p>
         </Tarjeta>
@@ -99,7 +99,7 @@ export default async function SemanaCaja({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-xs uppercase text-gray-500">
+              <tr className="border-b border-borde text-xs uppercase text-tinta-suave">
                 <th className="py-2 pr-2 text-left font-medium">Día</th>
                 <th className="py-2 px-2 text-right font-medium">Salidas</th>
                 <th className="py-2 px-2 text-right font-medium">Entradas</th>
@@ -113,8 +113,8 @@ export default async function SemanaCaja({
                 return (
                   <tr
                     key={fecha}
-                    className={`border-b border-gray-100 last:border-0 ${
-                      fecha === hoyStr ? "bg-marca-50" : ""
+                    className={`border-b border-borde last:border-0 ${
+                      fecha === hoyStr ? "bg-crema-200/10" : ""
                     }`}
                   >
                     <td className="py-2.5 pr-2">
@@ -125,10 +125,10 @@ export default async function SemanaCaja({
                         {DIAS[i].slice(0, 3)}
                       </Link>
                     </td>
-                    <td className="py-2.5 px-2 text-right text-gray-500">
+                    <td className="py-2.5 px-2 text-right text-tinta-suave">
                       {d.salidas ? pesos(d.salidas) : "—"}
                     </td>
-                    <td className="py-2.5 px-2 text-right text-gray-500">
+                    <td className="py-2.5 px-2 text-right text-tinta-suave">
                       {d.entradas ? pesos(d.entradas) : "—"}
                     </td>
                     <td className="py-2.5 px-2 text-right">
@@ -142,7 +142,7 @@ export default async function SemanaCaja({
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-gray-300 font-semibold tabular">
+              <tr className="border-t-2 border-borde-fuerte font-semibold tabular">
                 <td className="py-2.5 pr-2">Total</td>
                 <td className="py-2.5 px-2 text-right">
                   {pesos(r.totales.salidas)}
@@ -166,7 +166,7 @@ export default async function SemanaCaja({
         {conceptos.length === 0 ? (
           <Vacio>Sin pagos registrados esta semana.</Vacio>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-borde">
             {conceptos.map((c) => (
               <li
                 key={c.concepto}
@@ -175,7 +175,7 @@ export default async function SemanaCaja({
                 <span className="truncate">
                   {c.concepto}
                   {c.veces > 1 && (
-                    <span className="ml-1 text-xs text-gray-400">
+                    <span className="ml-1 text-xs text-tinta-tenue">
                       ×{c.veces}
                     </span>
                   )}
@@ -213,7 +213,7 @@ export default async function SemanaCaja({
           {diferencia !== null && (
             <p
               className={`text-sm ${
-                diferencia >= 0 ? "text-marca-600" : "text-red-600"
+                diferencia >= 0 ? "text-crema-200" : "text-rojo"
               }`}
             >
               {diferencia >= 0 ? "Subió " : "Bajó "}

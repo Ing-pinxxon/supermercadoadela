@@ -1,25 +1,53 @@
 @import "tailwindcss";
 
+/*
+ * El tema de la tienda: verde profundo de fondo, crema para el texto y los
+ * botones, serif gruesa en los títulos. Todo el color de la app sale de estos
+ * tokens; las pantallas dicen «superficie» o «tinta», nunca un color a mano.
+ *
+ * Los nombres son por lo que hacen, no por cómo se ven, para que cambiar de
+ * tema vuelva a ser cambiar este archivo.
+ */
 @theme {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-cabin), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
 
-  /* Verde de la tienda. */
-  --color-marca-50: #f0fdf4;
-  --color-marca-100: #dcfce7;
-  --color-marca-200: #bbf7d0;
-  --color-marca-400: #4ade80;
-  --color-marca-500: #16a34a;
-  --color-marca-600: #15803d;
-  --color-marca-700: #166534;
-  --color-marca-800: #14532d;
+  /* Verdes, del más profundo al más claro. */
+  --color-verde-950: #14301a;
+  --color-verde-900: #1c3f1c;
+  --color-verde-800: #234a21;
+  --color-verde-700: #2c5a29;
+  --color-verde-600: #346a30;
+  --color-verde-500: #3f7c3a;
+  --color-verde-400: #5c9a55;
 
-  /* Acento cálido: la plata que entra y los avisos. */
-  --color-acento-50: #fff7ed;
-  --color-acento-100: #ffedd5;
-  --color-acento-500: #f97316;
-  --color-acento-600: #ea580c;
-  --color-acento-700: #c2410c;
+  /* Cremas: el texto, los botones y los avisos. */
+  --color-crema-50: #fdf8e6;
+  --color-crema-100: #fbf1cd;
+  --color-crema-200: #f7e8b8;
+  --color-crema-300: #f3dfa2;
+  --color-crema-400: #ead18a;
+
+  /* Lo que se pinta en la pantalla, por función. */
+  --color-fondo: var(--color-verde-800);
+  --color-superficie: var(--color-verde-700);
+  --color-superficie-2: var(--color-verde-600);
+  --color-borde: color-mix(in srgb, var(--color-crema-200) 18%, transparent);
+  --color-borde-fuerte: color-mix(
+    in srgb,
+    var(--color-crema-200) 35%,
+    transparent
+  );
+  --color-tinta: var(--color-crema-100);
+  --color-tinta-suave: color-mix(in srgb, var(--color-crema-100) 72%, transparent);
+  --color-tinta-tenue: color-mix(in srgb, var(--color-crema-100) 45%, transparent);
+
+  /* Lo que va escrito sobre crema (botones, cifras grandes). */
+  --color-sobre-crema: var(--color-verde-900);
+
+  /* Errores y montos negativos: un rojo que se lea sobre el verde. */
+  --color-rojo: #ffb3a7;
+  --color-rojo-fuerte: #ff8d7a;
 
   --animate-aparecer: aparecer 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -55,14 +83,21 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
-  background: #f6f7f9;
-  color: #111827;
+  background: var(--color-fondo);
+  color: var(--color-tinta);
   font-family: var(--font-sans);
   -webkit-text-size-adjust: 100%;
+}
+
+/* Los títulos y las cifras grandes van en la serif de la marca. */
+.display {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 100;
+  letter-spacing: -0.01em;
 }
 
 /* Android pinta un cuadro azul sobre lo que se toca; estorba más que ayuda. */
@@ -77,6 +112,20 @@ select,
 textarea,
 button {
   font-size: 16px;
+}
+
+/* Los campos van en crema clara con texto oscuro: sobre el verde se pierden. */
+input,
+select,
+textarea {
+  color: var(--color-verde-900);
+}
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--color-verde-900) 45%, transparent);
+}
+input[type="checkbox"] {
+  accent-color: var(--color-crema-200);
 }
 
 /* Los inputs de monto se leen mejor alineados a la derecha. */
@@ -125,9 +174,14 @@ button {
   }
 }
 
-/* El bloque gris que late mientras carga la pantalla. */
+/* El bloque que late mientras carga la pantalla. */
 .esqueleto {
-  background: linear-gradient(90deg, #e9eaee 25%, #f2f3f5 50%, #e9eaee 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-superficie) 25%,
+    var(--color-superficie-2) 50%,
+    var(--color-superficie) 75%
+  );
   background-size: 200% 100%;
   border-radius: 0.75rem;
 }
@@ -144,11 +198,23 @@ button {
   }
 }
 
+/* En papel, blanco y negro: la tinta de la impresora no es crema. */
 @media print {
   .no-print {
     display: none !important;
   }
   body {
     background: white;
+    color: black;
+  }
+  .bg-superficie,
+  .bg-superficie-2 {
+    background: white !important;
+    box-shadow: none !important;
+  }
+  .text-tinta,
+  .text-tinta-suave,
+  .text-tinta-tenue {
+    color: black !important;
   }
 }

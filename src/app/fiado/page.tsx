@@ -44,7 +44,7 @@ export default async function Fiados() {
         {deben.length === 0 ? (
           <Vacio>Nadie debe nada. Así da gusto.</Vacio>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-borde">
             {deben.map((d) => (
               <li key={d.id}>
                 <TarjetaEnlace href={`/fiado/${d.id}`} className="py-3">
@@ -52,12 +52,12 @@ export default async function Fiados() {
                     <div className="min-w-0">
                       <div className="truncate font-medium">{d.nombre}</div>
                       {d.ultima && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-tinta-suave">
                           último movimiento: {etiquetaCorta(d.ultima)}
                         </div>
                       )}
                     </div>
-                    <span className="tabular shrink-0 font-bold text-acento-700">
+                    <span className="tabular shrink-0 font-bold text-crema-200">
                       {pesos(d.saldo)}
                     </span>
                   </div>
@@ -70,11 +70,11 @@ export default async function Fiados() {
 
       {alDia.length > 0 && (
         <Tarjeta titulo={`Al día (${alDia.length})`}>
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-borde">
             {alDia.map((d) => (
               <li key={d.id}>
                 <TarjetaEnlace href={`/fiado/${d.id}`} className="py-2.5">
-                  <div className="flex items-center justify-between gap-3 text-gray-500">
+                  <div className="flex items-center justify-between gap-3 text-tinta-suave">
                     <span className="truncate">{d.nombre}</span>
                     {d.saldo < 0 ? (
                       <Insignia tono="marca">

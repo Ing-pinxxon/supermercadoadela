@@ -14,12 +14,12 @@ export function Tarjeta({
 }) {
   return (
     <section
-      className={`rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 transition hover:shadow-md ${className}`}
+      className={`rounded-2xl bg-superficie p-4 shadow-sm ring-1 ring-borde transition hover:ring-borde-fuerte ${className}`}
     >
       {(titulo || accion) && (
         <header className="mb-3 flex items-center justify-between gap-2">
           {titulo && (
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-tinta-suave">
               {titulo}
             </h2>
           )}
@@ -42,17 +42,20 @@ export function Campo({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">
+      <span className="mb-1 block text-sm font-medium text-tinta">
         {etiqueta}
       </span>
       {children}
-      {ayuda && <span className="mt-1 block text-xs text-gray-500">{ayuda}</span>}
+      {ayuda && (
+        <span className="mt-1 block text-xs text-tinta-suave">{ayuda}</span>
+      )}
     </label>
   );
 }
 
+/** Los campos van en crema clara: sobre el verde, lo escrito se perdería. */
 const claseInput =
-  "w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-100";
+  "w-full rounded-xl border border-transparent bg-crema-50 px-3 py-2.5 text-verde-900 outline-none transition focus:border-crema-300 focus:ring-2 focus:ring-crema-200/50";
 
 export function Texto(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${claseInput} ${props.className ?? ""}`} />;
@@ -93,15 +96,15 @@ export function Fila({
 }) {
   const color =
     tono === "positivo"
-      ? "text-marca-600"
+      ? "text-crema-200"
       : tono === "negativo"
-        ? "text-red-600"
+        ? "text-rojo"
         : tono === "suave"
-          ? "text-gray-500"
-          : "text-gray-900";
+          ? "text-tinta-suave"
+          : "text-tinta";
   return (
     <div className="flex items-baseline justify-between gap-3 py-1.5">
-      <span className={`text-sm ${fuerte ? "font-semibold" : "text-gray-600"}`}>
+      <span className={`text-sm ${fuerte ? "font-semibold" : "text-tinta-suave"}`}>
         {etiqueta}
       </span>
       <span
@@ -115,7 +118,7 @@ export function Fila({
 
 export function Vacio({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-xl bg-gray-50 px-3 py-6 text-center text-sm text-gray-500">
+    <p className="rounded-xl bg-superficie-2 px-3 py-6 text-center text-sm text-tinta-suave">
       {children}
     </p>
   );
@@ -125,7 +128,7 @@ export function Volver({ href, texto }: { href: string; texto: string }) {
   return (
     <Link
       href={href}
-      className="text-sm text-gray-500 underline-offset-2 hover:underline"
+      className="text-sm text-tinta-suave underline-offset-2 hover:text-tinta hover:underline"
     >
       ← {texto}
     </Link>
@@ -141,10 +144,10 @@ export function Insignia({
   tono?: "gris" | "marca" | "acento" | "rojo";
 }) {
   const color = {
-    gris: "bg-gray-100 text-gray-600",
-    marca: "bg-marca-100 text-marca-700",
-    acento: "bg-acento-100 text-acento-700",
-    rojo: "bg-red-50 text-red-600",
+    gris: "bg-superficie-2 text-tinta-suave",
+    marca: "bg-crema-200 text-sobre-crema",
+    acento: "bg-crema-200 text-sobre-crema",
+    rojo: "bg-rojo/15 text-rojo",
   }[tono];
   return (
     <span
@@ -157,36 +160,31 @@ export function Insignia({
 
 /**
  * El número grande de una pantalla: el ingreso del día, lo que se debe. Va en
- * su propia tarjeta de color para que se distinga del resto de la información.
+ * una tarjeta crema, la única cosa clara de la pantalla, para que se vea de
+ * lejos.
  */
 export function Cifra({
   titulo,
   valor,
   pie,
-  tono = "marca",
   children,
 }: {
   titulo: string;
   valor: string;
   pie?: string;
+  /** Se acepta por compatibilidad: en este tema todas las cifras van en crema. */
   tono?: "marca" | "acento";
   children?: React.ReactNode;
 }) {
-  const fondo =
-    tono === "marca"
-      ? "from-marca-500 to-marca-700 shadow-marca-500/25"
-      : "from-acento-500 to-acento-700 shadow-acento-500/25";
   return (
-    <section
-      className={`rounded-2xl bg-gradient-to-br ${fondo} p-4 text-white shadow-lg`}
-    >
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-white/70">
+    <section className="rounded-2xl bg-crema-100 p-4 text-sobre-crema shadow-lg shadow-verde-950/30">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-verde-700">
         {titulo}
       </h2>
-      <div className="tabular mt-1 text-3xl font-bold">{valor}</div>
-      {pie && <p className="mt-0.5 text-xs text-white/70">{pie}</p>}
+      <div className="display tabular mt-1 text-4xl font-black">{valor}</div>
+      {pie && <p className="mt-0.5 text-xs text-verde-700">{pie}</p>}
       {children && (
-        <div className="mt-3 border-t border-dashed border-white/25 pt-2">
+        <div className="mt-3 border-t border-dashed border-verde-700/30 pt-2">
           {children}
         </div>
       )}
@@ -194,7 +192,7 @@ export function Cifra({
   );
 }
 
-/** Una fila de la tarjeta de cifra, en blanco sobre el color. */
+/** Una fila de la tarjeta de cifra, en verde sobre la crema. */
 export function FilaClara({
   etiqueta,
   valor,
@@ -204,7 +202,7 @@ export function FilaClara({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1">
-      <span className="text-sm text-white/80">{etiqueta}</span>
+      <span className="text-sm text-verde-700">{etiqueta}</span>
       <span className="tabular shrink-0 whitespace-nowrap text-sm font-semibold">
         {valor}
       </span>
@@ -212,7 +210,7 @@ export function FilaClara({
   );
 }
 
-/** Bloque gris que late mientras carga una pantalla (ver los loading.tsx). */
+/** Bloque que late mientras carga una pantalla (ver los loading.tsx). */
 export function Esqueleto({ className = "" }: { className?: string }) {
   return <div className={`esqueleto ${className}`} />;
 }

@@ -10,7 +10,7 @@ import type { Medio } from "@/lib/tipos";
 function Botones() {
   const { pending } = useFormStatus();
   const base =
-    "flex-1 min-h-12 rounded-xl px-4 text-sm font-semibold shadow-sm transition active:scale-[.97] disabled:opacity-50 disabled:active:scale-100";
+    "flex-1 min-h-12 rounded-full px-4 text-sm font-semibold transition active:scale-[.97] disabled:opacity-50 disabled:active:scale-100";
   return (
     <div className="flex gap-2">
       <button
@@ -18,7 +18,7 @@ function Botones() {
         name="tipo"
         value="SALIDA"
         disabled={pending}
-        className={`${base} bg-gray-900 text-white hover:bg-gray-800`}
+        className={`${base} bg-crema-200 text-sobre-crema shadow-md shadow-verde-950/30 hover:bg-crema-100`}
       >
         {pending ? "Guardando…" : "Pagué"}
       </button>
@@ -27,7 +27,7 @@ function Botones() {
         name="tipo"
         value="ENTRADA"
         disabled={pending}
-        className={`${base} bg-acento-500 text-white shadow-acento-500/20 hover:bg-acento-600`}
+        className={`${base} bg-transparent text-tinta ring-1 ring-crema-200/60 hover:bg-crema-200/10`}
       >
         Entró plata
       </button>
@@ -36,7 +36,7 @@ function Botones() {
 }
 
 const claseInput =
-  "w-full rounded-xl border border-gray-300 bg-white px-3 py-3 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-100";
+  "w-full rounded-xl border border-transparent bg-crema-50 px-3 py-3 text-verde-900 outline-none transition focus:border-crema-300 focus:ring-2 focus:ring-crema-200/50";
 
 /**
  * El formulario que se usa veinte veces al día: concepto, monto, cómo se pagó
@@ -130,8 +130,8 @@ export function RegistroRapido({
               }}
               className={`rounded-full px-3 py-1.5 text-xs ring-1 transition active:scale-90 ${
                 concepto === c
-                  ? "bg-marca-500 text-white ring-marca-500"
-                  : "bg-white text-gray-600 ring-gray-300 hover:bg-gray-50"
+                  ? "bg-crema-200 text-sobre-crema ring-crema-200"
+                  : "bg-transparent text-tinta-suave ring-crema-200/40 hover:bg-crema-200/10"
               }`}
             >
               {c}
@@ -143,7 +143,7 @@ export function RegistroRapido({
       <Botones />
       <Aviso texto={aviso} />
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-tinta-suave">
         «Pagué» es plata que sale (proveedor, mercado, trabajador). «Entró plata»
         es lo que entra sin ser venta del día: prestados, abonos de fiados,
         aportes. Para una devolución, escribe el monto en negativo.
@@ -169,17 +169,17 @@ export function MedioDePago({
   ];
 
   return (
-    <div className="inline-flex rounded-xl bg-gray-100 p-1">
+    <div className="inline-flex rounded-full bg-verde-900/50 p-1">
       {opciones.map((o) => (
         <button
           key={o.medio}
           type="button"
           onClick={() => cambiar(o.medio)}
           aria-pressed={valor === o.medio}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition active:scale-95 ${
+          className={`rounded-full px-3 py-1.5 text-sm font-medium transition active:scale-95 ${
             valor === o.medio
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-crema-200 text-sobre-crema shadow-sm"
+              : "text-tinta-suave hover:text-tinta"
           }`}
         >
           {o.texto}

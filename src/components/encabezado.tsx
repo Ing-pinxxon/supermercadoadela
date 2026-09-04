@@ -15,12 +15,12 @@ export async function Encabezado({ seccion }: { seccion: "caja" | "tareas" }) {
   const admin = rol === "admin" || rol === "abierto";
 
   return (
-    <header className="no-print sticky top-0 z-10 bg-gradient-to-r from-marca-600 to-marca-700 shadow-sm">
+    <header className="no-print sticky top-0 z-10 border-b border-borde bg-verde-900/70 backdrop-blur">
       <div className="mx-auto max-w-3xl px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <Link
             href="/"
-            className="rounded-lg px-2 py-1 text-sm font-bold text-white transition active:scale-95 hover:bg-white/15"
+            className="display rounded-lg px-2 py-1 text-lg font-black text-crema-100 transition active:scale-95 hover:bg-crema-200/10"
           >
             Adela
           </Link>
@@ -28,7 +28,7 @@ export async function Encabezado({ seccion }: { seccion: "caja" | "tareas" }) {
           {rol !== "abierto" && (
             <a
               href="/salir"
-              className="shrink-0 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white transition active:scale-95 hover:bg-white/25"
+              className="shrink-0 rounded-full bg-crema-200/15 px-2.5 py-1 text-xs font-medium text-tinta transition active:scale-95 hover:bg-crema-200/25"
               title="Cerrar sesión"
             >
               {rol === "admin" ? "Admin" : "Tienda"} ·{" "}

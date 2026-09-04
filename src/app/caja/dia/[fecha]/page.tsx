@@ -46,7 +46,7 @@ export default async function DiaCaja({
     <div className="escalonado space-y-5">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">{etiquetaLarga(fecha)}</h1>
+          <h1 className="display text-2xl font-black">{etiquetaLarga(fecha)}</h1>
           {resumen.cerrado && (
             <span className="mt-1 inline-block">
               <Insignia tono="marca">Día cerrado</Insignia>
@@ -161,7 +161,7 @@ export default async function DiaCaja({
               tono="suave"
             />
           )}
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-tinta-suave">
             Los pagos por transferencia ya están contados arriba, igual que los
             de efectivo. Esto es solo para saber por dónde se movió la plata.
           </p>
@@ -190,7 +190,7 @@ function ListaMovimientos({
         <Vacio>{vacio}</Vacio>
       ) : (
         <>
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-borde">
             {items.map((m) => (
               <li
                 key={m.id}
@@ -198,7 +198,7 @@ function ListaMovimientos({
               >
                 <div className="min-w-0">
                   <div className="truncate font-medium">{m.concepto}</div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
                     {m.medio === "TRANSFERENCIA" && (
                       <Insignia>Transferencia</Insignia>
                     )}
@@ -208,7 +208,7 @@ function ListaMovimientos({
                 <div className="flex shrink-0 items-center gap-3">
                   <span
                     className={`tabular font-semibold ${
-                      m.monto < 0 ? "text-red-600" : ""
+                      m.monto < 0 ? "text-rojo" : ""
                     }`}
                   >
                     {pesos(m.monto)}
@@ -229,7 +229,7 @@ function ListaMovimientos({
               </li>
             ))}
           </ul>
-          <div className="mt-2 border-t border-dashed border-gray-200 pt-2">
+          <div className="mt-2 border-t border-dashed border-borde pt-2">
             <Fila etiqueta="Total" valor={total} fuerte />
           </div>
         </>

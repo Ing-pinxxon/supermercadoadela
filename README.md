@@ -235,8 +235,13 @@ Cinco decisiones que conviene no romper:
   7 p.m. y la medianoche la app registra el día siguiente. `src/lib/fechas.ts`
   es el único lugar que toca fechas, y `src/lib/db.ts` le dice a Postgres que
   devuelva las columnas `DATE` tal cual, sin convertirlas.
+- **Todo el color sale de los tokens de `src/app/globals.css`.** Las pantallas
+  dicen `bg-superficie` o `text-tinta`, nunca un color a mano: cambiar de tema
+  es cambiar ese archivo. Las letras (Fraunces para títulos y cifras, Cabin
+  para el resto) se empaquetan al construir con `next/font`; el celular no
+  depende de internet para verlas.
 - **Los colores de las gráficas están validados para daltonismo.** Si los
-  cambias, revisa que el par siga siendo distinguible.
+  cambias, revisa que el par siga siendo distinguible sobre el verde.
 
 ## Pruebas
 

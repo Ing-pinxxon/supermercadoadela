@@ -14,8 +14,9 @@ export default function Icono() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #16a34a 0%, #166534 100%)",
-          color: "white",
+          background: "#234a21",
+          color: "#fbf1cd",
+          fontFamily: "Georgia, serif",
           fontSize: 300,
           fontWeight: 700,
         }}

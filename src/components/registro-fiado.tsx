@@ -11,7 +11,7 @@ import type { Medio } from "@/lib/tipos";
 function Botones() {
   const { pending } = useFormStatus();
   const base =
-    "flex-1 min-h-12 rounded-xl px-4 text-sm font-semibold shadow-sm transition active:scale-[.97] disabled:opacity-50 disabled:active:scale-100";
+    "flex-1 min-h-12 rounded-full px-4 text-sm font-semibold transition active:scale-[.97] disabled:opacity-50 disabled:active:scale-100";
   return (
     <div className="flex gap-2">
       <button
@@ -19,7 +19,7 @@ function Botones() {
         name="tipo"
         value="FIADO"
         disabled={pending}
-        className={`${base} bg-acento-500 text-white shadow-acento-500/20 hover:bg-acento-600`}
+        className={`${base} bg-transparent text-tinta ring-1 ring-crema-200/60 hover:bg-crema-200/10`}
       >
         {pending ? "Guardando…" : "Se llevó fiado"}
       </button>
@@ -28,7 +28,7 @@ function Botones() {
         name="tipo"
         value="ABONO"
         disabled={pending}
-        className={`${base} bg-marca-500 text-white shadow-marca-500/20 hover:bg-marca-600`}
+        className={`${base} bg-crema-200 text-sobre-crema shadow-md shadow-verde-950/30 hover:bg-crema-100`}
       >
         Abonó
       </button>
@@ -82,13 +82,13 @@ export function RegistroFiado({
           inputMode="numeric"
           required
           placeholder="Monto"
-          className="monto w-full rounded-xl border border-gray-300 bg-white px-3 py-3 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-100 sm:w-40"
+          className="monto sm:w-40 w-full rounded-xl border border-transparent bg-crema-50 px-3 py-3 text-verde-900 outline-none transition focus:border-crema-300 focus:ring-2 focus:ring-crema-200/50"
         />
         <input
           name="nota"
           autoComplete="off"
           placeholder="Nota (opcional)"
-          className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-100"
+          className="w-full rounded-xl border border-transparent bg-crema-50 px-3 py-3 text-verde-900 outline-none transition focus:border-crema-300 focus:ring-2 focus:ring-crema-200/50"
         />
       </div>
 
@@ -96,7 +96,7 @@ export function RegistroFiado({
       <Botones />
       <Aviso texto={aviso} />
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-tinta-suave">
         Fiar no mueve la caja: solo queda la deuda. El abono sí entra al día como
         plata que entró sin ser venta.
       </p>

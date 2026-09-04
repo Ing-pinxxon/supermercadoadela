@@ -49,18 +49,18 @@ export default async function Entrar({
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
       <div className="aparecer">
-        <div className="mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-marca-400 to-marca-600 text-2xl shadow-lg shadow-marca-500/25">
+        <div className="mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-crema-200 text-2xl shadow-lg shadow-verde-950/30">
           🛒
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="display text-3xl font-black">
           Supermercado Adela
         </h1>
         {pideAdmin ? (
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-tinta-suave">
             Esa pantalla es del administrador. Escribe su clave para seguir.
           </p>
         ) : (
-          <p className="mt-1 text-sm text-gray-500">Escribe la clave.</p>
+          <p className="mt-1 text-sm text-tinta-suave">Escribe la clave.</p>
         )}
 
         <form action={entrar} className="mt-6 space-y-3">
@@ -76,12 +76,12 @@ export default async function Entrar({
             />
           </Campo>
           {error === "1" && (
-            <p className="pop rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="pop rounded-xl bg-rojo/15 px-3 py-2 text-sm text-rojo">
               Clave incorrecta.
             </p>
           )}
           {error === "admin" && (
-            <p className="pop rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="pop rounded-xl bg-rojo/15 px-3 py-2 text-sm text-rojo">
               Esa es la clave de la tienda. Para esta pantalla hace falta la
               del administrador.
             </p>
@@ -92,7 +92,7 @@ export default async function Entrar({
         </form>
 
         {pideAdmin && (
-          <p className="mt-4 text-center text-xs text-gray-400">
+          <p className="mt-4 text-center text-xs text-tinta-tenue">
             <a href="/caja" className="hover:underline">
               Volver a la caja sin cambiar de clave
             </a>

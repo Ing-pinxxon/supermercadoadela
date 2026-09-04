@@ -27,8 +27,8 @@ export default async function TareasHoy({
     <div className="escalonado space-y-5">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">{etiquetaLarga(fecha)}</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="display text-2xl font-black">{etiquetaLarga(fecha)}</h1>
+          <p className="text-sm text-tinta-suave">
             {hechas} de {tareas.length} hechas
           </p>
         </div>
@@ -39,9 +39,9 @@ export default async function TareasHoy({
         />
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+      <div className="h-2 overflow-hidden rounded-full bg-verde-900/60">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-marca-400 to-marca-600 transition-all duration-500"
+          className="h-full rounded-full bg-gradient-to-r from-crema-300 to-crema-100 transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>

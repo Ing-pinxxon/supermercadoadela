@@ -18,8 +18,8 @@ function Punto({
   return (
     <div className="flex items-start gap-3 py-2">
       <span
-        className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold text-white ${
-          ok ? "bg-marca-500" : "bg-red-500"
+        className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${
+          ok ? "bg-crema-200 text-sobre-crema" : "bg-rojo text-verde-950"
         }`}
       >
         {ok ? "✓" : "!"}
@@ -27,7 +27,7 @@ function Punto({
       <div className="min-w-0">
         <div className="text-sm font-medium">{titulo}</div>
         {children && (
-          <div className="mt-0.5 break-words text-sm text-gray-500">
+          <div className="mt-0.5 break-words text-sm text-tinta-suave">
             {children}
           </div>
         )}
@@ -52,8 +52,8 @@ export default async function Instalar() {
     <main className="mx-auto max-w-xl space-y-5 px-4 py-8">
       <div>
         <Volver href="/" texto="Inicio" />
-        <h1 className="mt-2 text-xl font-bold">Estado de la base de datos</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="display mt-2 text-2xl font-black">Estado de la base de datos</h1>
+        <p className="text-sm text-tinta-suave">
           Esta pantalla revisa la conexión y crea lo que falte. Se puede volver
           a usar cuando sea: no borra lo que ya esté registrado.
         </p>
@@ -146,7 +146,7 @@ export default async function Instalar() {
           </Tarjeta>
 
           <Tarjeta titulo="Lo registrado en la app">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-tinta-suave">
               {e.diasRegistrados} día(s) cerrados desde la app.
             </p>
           </Tarjeta>
@@ -157,13 +157,13 @@ export default async function Instalar() {
         <div className="flex gap-3">
           <Link
             href="/caja"
-            className="rounded-xl bg-marca-500 px-4 py-2.5 text-sm font-semibold text-white"
+            className="rounded-full bg-crema-200 px-5 py-2.5 text-sm font-semibold text-sobre-crema shadow-md shadow-verde-950/30"
           >
             Ir a caja
           </Link>
           <Link
             href="/tareas"
-            className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 ring-1 ring-gray-300"
+            className="rounded-full px-5 py-2.5 text-sm font-semibold text-tinta ring-1 ring-crema-200/60"
           >
             Ir a tareas
           </Link>

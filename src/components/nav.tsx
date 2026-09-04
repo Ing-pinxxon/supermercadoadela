@@ -42,7 +42,7 @@ function Contenido({ children }: { children: React.ReactNode }) {
 }
 
 const BASE =
-  "inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-medium transition active:scale-95";
+  "inline-flex min-h-11 items-center justify-center rounded-full px-3.5 text-sm font-medium transition active:scale-95";
 
 /** Enlace del encabezado. Se pinta distinto cuando es la pantalla actual. */
 export function EnlaceNav({
@@ -63,8 +63,8 @@ export function EnlaceNav({
       aria-current={actual ? "page" : undefined}
       className={`${BASE} ${
         actual
-          ? "bg-white text-marca-700 shadow-sm ring-1 ring-marca-200"
-          : "text-white/80 hover:bg-white/15 hover:text-white"
+          ? "bg-crema-200 text-sobre-crema shadow-sm"
+          : "text-tinta-suave hover:bg-crema-200/10 hover:text-tinta"
       }`}
     >
       <Contenido>{children}</Contenido>
@@ -88,10 +88,10 @@ export function BotonFecha({
     <Link
       href={href}
       aria-label={etiqueta}
-      className={`${BASE} min-w-11 shadow-sm ${
+      className={`${BASE} min-w-11 ${
         resaltado
-          ? "bg-marca-500 text-white hover:bg-marca-600"
-          : "bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50 hover:ring-gray-300"
+          ? "bg-crema-200 text-sobre-crema shadow-md shadow-verde-950/30 hover:bg-crema-100"
+          : "bg-transparent text-tinta ring-1 ring-crema-200/50 hover:bg-crema-200/10 hover:ring-crema-200"
       }`}
     >
       <Contenido>{children}</Contenido>

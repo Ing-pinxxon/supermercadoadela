@@ -10,21 +10,21 @@ const ATAJOS = [
     icono: "🧾",
     titulo: "Caja y proveedores",
     texto: "Registro del día, pagos a proveedores y gastos.",
-    color: "from-marca-500 to-marca-700",
+    color: "bg-crema-200",
   },
   {
     href: "/fiado",
     icono: "📒",
     titulo: "Fiados",
     texto: "Quién debe, cuánto, y los abonos cuando pagan.",
-    color: "from-acento-500 to-acento-700",
+    color: "bg-crema-200",
   },
   {
     href: "/tareas",
     icono: "✅",
     titulo: "Tareas del día",
     texto: "La rutina de lunes a domingo, para ir marcando.",
-    color: "from-gray-700 to-gray-900",
+    color: "bg-crema-200",
   },
 ];
 
@@ -34,24 +34,24 @@ export default async function Inicio() {
 
   return (
     <main className="mx-auto max-w-md px-5 py-10">
-      <h1 className="text-2xl font-bold tracking-tight">Supermercado Adela</h1>
-      <p className="mt-1 text-sm text-gray-500">{etiquetaLarga(fecha)}</p>
+      <h1 className="display text-4xl font-black">Supermercado Adela</h1>
+      <p className="mt-1 text-sm text-tinta-suave">{etiquetaLarga(fecha)}</p>
 
       <div className="escalonado mt-8 grid gap-3">
         {ATAJOS.map((a) => (
           <Link
             key={a.href}
             href={a.href}
-            className="group flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 transition hover:shadow-md active:scale-[.99]"
+            className="group flex items-center gap-4 rounded-2xl bg-superficie p-4 shadow-sm ring-1 ring-borde transition hover:ring-borde-fuerte active:scale-[.99]"
           >
             <span
-              className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${a.color} text-xl shadow-sm`}
+              className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${a.color} text-xl shadow-md shadow-verde-950/30`}
             >
               {a.icono}
             </span>
             <span className="min-w-0">
               <span className="block font-semibold">{a.titulo}</span>
-              <span className="mt-0.5 block text-sm text-gray-500">
+              <span className="mt-0.5 block text-sm text-tinta-suave">
                 {a.texto}
               </span>
             </span>
@@ -60,7 +60,7 @@ export default async function Inicio() {
       </div>
 
       {admin && (
-        <p className="mt-8 text-center text-xs text-gray-400">
+        <p className="mt-8 text-center text-xs text-tinta-tenue">
           <Link href="/instalar" className="hover:underline">
             Estado de la base de datos
           </Link>

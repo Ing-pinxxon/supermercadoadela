@@ -28,7 +28,7 @@ export default async function Historico() {
   if (!resumen || resumen.dias === 0) {
     return (
       <div className="space-y-5">
-        <h1 className="text-xl font-bold">Histórico</h1>
+        <h1 className="display text-2xl font-black">Histórico</h1>
         <Tarjeta>
           <Vacio>
             No hay archivo cargado. Se carga con el botón «Cargar histórico»
@@ -48,8 +48,8 @@ export default async function Historico() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold">Histórico</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="display text-2xl font-black">Histórico</h1>
+        <p className="text-sm text-tinta-suave">
           Lo que traía la hoja de cálculo: {resumen.dias} días entre{" "}
           {etiquetaCorta(resumen.desde)} y {etiquetaCorta(resumen.hasta)}.
         </p>
@@ -61,19 +61,19 @@ export default async function Historico() {
             <div className="tabular text-2xl font-bold">
               {pesos(resumen.ingreso)}
             </div>
-            <p className="text-xs text-gray-500">ingreso bruto acumulado</p>
+            <p className="text-xs text-tinta-suave">ingreso bruto acumulado</p>
           </div>
           <div>
             <div className="tabular text-2xl font-bold">
               {comparacion.archivo ? pesos(comparacion.archivo) : "—"}
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-tinta-suave">
               promedio por semana ({comparacion.semanasArchivo} semanas)
             </p>
           </div>
         </div>
         {mejor && (
-          <p className="mt-3 border-t border-dashed border-gray-200 pt-2 text-xs text-gray-500">
+          <p className="mt-3 border-t border-dashed border-borde pt-2 text-xs text-tinta-suave">
             La mejor semana fue la del {etiquetaCorta(mejor.lunes)} con{" "}
             {pesos(mejor.ingreso_bruto)}.
           </p>
@@ -83,7 +83,7 @@ export default async function Historico() {
       {/* Comparación con lo que va del año */}
       <Tarjeta titulo="Contra lo que va ahora">
         {comparacion.actual === null ? (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-tinta-suave">
             Todavía no hay semanas completas registradas en la app. Cuando
             registres cinco días o más de una semana, aquí aparece la
             comparación contra el promedio de{" "}
@@ -96,7 +96,7 @@ export default async function Historico() {
                 <div className="tabular text-2xl font-bold">
                   {pesos(comparacion.actual)}
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-tinta-suave">
                   promedio ahora ({comparacion.semanasActuales} semanas)
                 </p>
               </div>
@@ -104,14 +104,14 @@ export default async function Historico() {
                 <div
                   className={`tabular text-2xl font-bold ${
                     (comparacion.variacion ?? 0) >= 0
-                      ? "text-marca-600"
-                      : "text-red-600"
+                      ? "text-crema-200"
+                      : "text-rojo"
                   }`}
                 >
                   {(comparacion.variacion ?? 0) >= 0 ? "+" : ""}
                   {comparacion.variacion}%
                 </div>
-                <p className="text-xs text-gray-500">contra el archivo</p>
+                <p className="text-xs text-tinta-suave">contra el archivo</p>
               </div>
             </div>
             <div className="mt-4">
@@ -162,7 +162,7 @@ export default async function Historico() {
             detalle: `${d.dias} días`,
           }))}
         />
-        <p className="mt-3 text-xs text-gray-500">
+        <p className="mt-3 text-xs text-tinta-suave">
           Promedio de ingreso bruto por día de la semana.
         </p>
       </Tarjeta>
@@ -178,10 +178,10 @@ export default async function Historico() {
                 valor: c.total,
                 detalle: `×${c.veces}`,
               }))}
-              color="#eb6834"
+              color="#ffb072"
             />
             {resumen.dudosos > 0 && (
-              <p className="mt-3 text-xs text-gray-500">
+              <p className="mt-3 text-xs text-tinta-suave">
                 En {resumen.dudosos} de {resumen.dias} días el detalle no suma
                 exactamente el total que traía la hoja, porque así estaba escrito
                 allá. Los totales de arriba usan los números de la hoja, no la

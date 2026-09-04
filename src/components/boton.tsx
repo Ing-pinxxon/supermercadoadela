@@ -2,6 +2,10 @@
 
 import { useFormStatus } from "react-dom";
 
+/**
+ * Los botones, como en la marca: píldoras crema sobre el verde. El principal
+ * es crema sólido; el secundario, solo el contorno.
+ */
 export function Boton({
   children,
   variante = "principal",
@@ -14,15 +18,16 @@ export function Boton({
   const { pending } = useFormStatus();
 
   const base =
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-sm transition active:scale-[.97] disabled:opacity-50 disabled:active:scale-100";
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition active:scale-[.97] disabled:opacity-50 disabled:active:scale-100";
   const estilos = {
     principal:
-      "bg-marca-500 text-white hover:bg-marca-600 shadow-marca-500/20 hover:shadow-md",
-    secundario:
-      "bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 hover:ring-gray-400",
+      "bg-crema-200 text-sobre-crema shadow-md shadow-verde-950/30 hover:bg-crema-100",
     acento:
-      "bg-acento-500 text-white hover:bg-acento-600 shadow-acento-500/20 hover:shadow-md",
-    peligro: "bg-white text-red-600 ring-1 ring-red-200 hover:bg-red-50",
+      "bg-crema-200 text-sobre-crema shadow-md shadow-verde-950/30 hover:bg-crema-100",
+    secundario:
+      "bg-transparent text-tinta ring-1 ring-crema-200/60 hover:bg-crema-200/10 hover:ring-crema-200",
+    peligro:
+      "bg-transparent text-rojo ring-1 ring-rojo/40 hover:bg-rojo/10 hover:ring-rojo",
   }[variante];
 
   return (

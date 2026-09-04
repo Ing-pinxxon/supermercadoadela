@@ -27,11 +27,11 @@ export default async function FichaDeudor({
     <div className="escalonado space-y-5">
       <div>
         <Volver href="/fiado" texto="Fiados" />
-        <h1 className="mt-2 text-xl font-bold">{persona.nombre}</h1>
+        <h1 className="display mt-2 text-2xl font-black">{persona.nombre}</h1>
         {persona.telefono && (
           <a
             href={`tel:${persona.telefono}`}
-            className="text-sm text-marca-600 underline-offset-2 hover:underline"
+            className="text-sm text-crema-200 underline-offset-2 hover:underline"
           >
             {persona.telefono}
           </a>
@@ -59,7 +59,7 @@ export default async function FichaDeudor({
         {movimientos.length === 0 ? (
           <Vacio>Todavía no hay nada anotado.</Vacio>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-borde">
             {movimientos.map((m) => (
               <li
                 key={m.id}
@@ -74,7 +74,7 @@ export default async function FichaDeudor({
                       <Insignia>Transf.</Insignia>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-tinta-suave">
                     {etiquetaCorta(m.fecha)}
                     {m.nota && ` · ${m.nota}`}
                   </div>
@@ -82,7 +82,7 @@ export default async function FichaDeudor({
                 <div className="flex shrink-0 items-center gap-3">
                   <span
                     className={`tabular font-semibold ${
-                      m.tipo === "FIADO" ? "text-acento-700" : "text-marca-600"
+                      m.tipo === "FIADO" ? "text-tinta" : "text-crema-200"
                     }`}
                   >
                     {m.tipo === "FIADO" ? "+" : "−"}

@@ -30,8 +30,8 @@ export function Aviso({
 }) {
   const color =
     tono === "marca"
-      ? "bg-marca-50 text-marca-700 ring-marca-200"
-      : "bg-acento-50 text-acento-700 ring-acento-200";
+      ? "bg-crema-200 text-sobre-crema ring-crema-300"
+      : "bg-crema-200 text-sobre-crema ring-crema-300";
 
   // Siempre en el árbol, para que los lectores de pantalla lo anuncien.
   return (

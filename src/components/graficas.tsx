@@ -7,11 +7,13 @@ import { pesos } from "@/lib/dinero";
  * Gráficas en SVG, sin librerías. Los colores vienen de una paleta validada
  * para daltonismo; el texto nunca lleva el color de la serie.
  */
-const SERIE_1 = "#2a78d6"; // azul
-const SERIE_2 = "#eb6834"; // naranja
-const SUPERFICIE = "#ffffff";
-const REJILLA = "#e5e7eb";
-const TINTA_2 = "#52514e";
+// Azul y naranja claros: siguen siendo distinguibles para daltonismo, y sobre
+// el verde profundo se leen mejor que los tonos oscuros del tema anterior.
+const SERIE_1 = "#8fbdff"; // azul
+const SERIE_2 = "#ffb072"; // naranja
+const SUPERFICIE = "#2c5a29"; // el color de la tarjeta (para el halo de los puntos)
+const REJILLA = "rgba(251, 241, 205, 0.18)";
+const TINTA_2 = "#f3dfa2";
 
 function ejeY(max: number) {
   if (max <= 0) return [0];
@@ -71,7 +73,7 @@ export function GraficaLineas({
   return (
     <div>
       {series.length > 1 && (
-        <div className="mb-2 flex flex-wrap gap-4 text-xs text-gray-600">
+        <div className="mb-2 flex flex-wrap gap-4 text-xs text-tinta-suave">
           {series.map((s, i) => (
             <span key={s.nombre} className="flex items-center gap-1.5">
               <span
@@ -190,7 +192,7 @@ export function GraficaLineas({
         </svg>
       </div>
 
-      <p className="mt-2 min-h-[1.25rem] text-xs text-gray-600">
+      <p className="mt-2 min-h-[1.25rem] text-xs text-tinta-suave">
         {activo !== null && series[0].puntos[activo] ? (
           <>
             <span className="font-medium">{series[0].puntos[activo].etiqueta}</span>
@@ -232,12 +234,12 @@ export function GraficaBarras({
             <span className="truncate">
               {d.etiqueta}
               {d.detalle && (
-                <span className="ml-1 text-xs text-gray-400">{d.detalle}</span>
+                <span className="ml-1 text-xs text-tinta-tenue">{d.detalle}</span>
               )}
             </span>
             <span className="tabular shrink-0 font-medium">{pesos(d.valor)}</span>
           </div>
-          <div className="mt-1 h-2.5 w-full rounded-full bg-gray-100">
+          <div className="mt-1 h-2.5 w-full rounded-full bg-superficie-2">
             <div
               className="h-full rounded-r-full transition-opacity"
               style={{
