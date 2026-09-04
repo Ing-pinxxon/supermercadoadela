@@ -58,6 +58,11 @@ await pool.query(`DELETE FROM cierre_dia WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
 await pool.query(`DELETE FROM tarea_hecha WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
 await pool.query(`DELETE FROM semana WHERE lunes = '2026-09-14'`);
 await pool.query(`DELETE FROM deudor WHERE clave LIKE 'e2e%'`);
+// La prueba 8 renombra una tarea de la rutina; se le devuelve su nombre.
+await pool.query(
+  `UPDATE tarea_plantilla SET titulo = 'Abrir y contar base de caja'
+    WHERE titulo = 'Tarea editada e2e'`,
+);
 await pool.end();
 
 // Si la base de pruebas tiene clave, se entra con la de administrador: es la
@@ -183,6 +188,33 @@ try {
   cambio = false;
 }
 revisar("marcar una tarea cambia el contador", cambio, `(era "${antes}")`);
+
+// 8. Editar una tarea de la rutina
+await page.goto(`${BASE}/tareas/rutina`);
+// La primera tarea de la mañana: se le cambia el nombre y se le agrega el miércoles
+await page.locator('details summary:has-text("Editar")').first().click();
+const formulario = page.locator("details[open] form").first();
+const antesTitulo = await formulario.locator('input[name="titulo"]').inputValue();
+await formulario.locator('input[name="titulo"]').fill("Tarea editada e2e");
+// Marca todos los días, para que salga seguro en el día de la prueba
+for (const casilla of await formulario.locator('input[name="diaSemana"]').all()) {
+  await casilla.check();
+}
+await formulario.locator('button[type=submit]').click();
+// Esperar a que la lista se vuelva a pintar, no un tiempo fijo.
+await page.waitForFunction(
+  () => document.body.innerText.includes("Tarea editada e2e"),
+  null,
+  { timeout: 15000 },
+).catch(() => {});
+await page.reload({ waitUntil: "networkidle" });
+texto = await page.textContent("body");
+revisar("editar cambia el nombre en la lista", texto.includes("Tarea editada e2e"), `(era "${antesTitulo}")`);
+revisar("y deja de estar el nombre viejo", !texto.includes(antesTitulo));
+
+await page.goto(`${BASE}/tareas?dia=${DIA}`);
+texto = await page.textContent("body");
+revisar("aparece en el día de la semana que se le agregó", texto.includes("Tarea editada e2e"));
 
 revisar("sin errores de JavaScript", errores.length === 0, errores.join(" | "));
 

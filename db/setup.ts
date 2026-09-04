@@ -32,11 +32,15 @@ async function main() {
   if (Number(rows[0].total) === 0) {
     let orden = 0;
     for (const t of TAREAS_INICIALES) {
+      // Un grupo por tarea: los días de una misma tarea van juntos, que es lo
+      // que permite editarla después de una sola vez.
+      const grupo = randomUUID();
       for (const dia of t.dias) {
         await pool.query(
-          `INSERT INTO tarea_plantilla (id, titulo, detalle, dia_semana, franja, orden)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [randomUUID(), t.titulo, t.detalle ?? null, dia, t.franja, orden],
+          `INSERT INTO tarea_plantilla
+             (id, grupo_id, titulo, detalle, dia_semana, franja, orden)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [randomUUID(), grupo, t.titulo, t.detalle ?? null, dia, t.franja, orden],
         );
       }
       orden += 10;

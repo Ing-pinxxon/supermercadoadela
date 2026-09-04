@@ -158,4 +158,22 @@ CREATE TABLE IF NOT EXISTS fiado (
 
 CREATE INDEX IF NOT EXISTS fiado_deudor_idx ON fiado (deudor_id);
 CREATE INDEX IF NOT EXISTS fiado_fecha_idx ON fiado (fecha);
+
+-- --- Una tarea de la rutina, aunque se repita varios días -----------
+-- Cada día de la semana es su propia fila (con su propio historial en
+-- tarea_hecha). La columna grupo_id es lo que las vuelve «una sola tarea»,
+-- para poder editarlas juntas.
+
+ALTER TABLE tarea_plantilla ADD COLUMN IF NOT EXISTS grupo_id TEXT;
+
+-- Las filas que ya existían se agrupan por título y franja, que es exactamente
+-- como las creó el formulario: el mismo título repetido en cada día. Solo toca
+-- las que no tienen grupo, así que correrlo de nuevo no hace nada.
+UPDATE tarea_plantilla t SET grupo_id = g.primero
+  FROM (SELECT titulo, franja, MIN(id) AS primero
+          FROM tarea_plantilla GROUP BY titulo, franja) g
+ WHERE t.grupo_id IS NULL AND t.titulo = g.titulo AND t.franja = g.franja;
+
+CREATE INDEX IF NOT EXISTS tarea_plantilla_grupo_idx
+  ON tarea_plantilla (grupo_id);
 `;

@@ -12,7 +12,7 @@ import {
   conceptosSugeridos,
   mayoresConceptos,
 } from "../src/lib/caja";
-import { tareasDelDia, avanceSemana } from "../src/lib/tareas";
+import { tareasDelDia, avanceSemana, rutina } from "../src/lib/tareas";
 import {
   semanasActuales,
   compararPromedios,
@@ -188,6 +188,73 @@ async function main() {
 
   revisar("avance cubre 7 días", (await avanceSemana(FECHA)).detalle.length, 7);
   revisar("día de semana correcto", diaSemana(FECHA), 3);
+
+  // --- Editar la rutina ------------------------------------------
+  // Una tarea de tres días es UNA tarea, no tres.
+  const grupo = nuevoId();
+  for (const dia of [1, 3, 5]) {
+    await consultar(
+      `INSERT INTO tarea_plantilla
+         (id, grupo_id, titulo, detalle, dia_semana, franja, orden)
+       VALUES ($1, $2, 'Prueba rutina', 'detalle', $3, 'MANANA', 999)`,
+      [nuevoId(), grupo, dia],
+    );
+  }
+  const enLista = async () => (await rutina()).find((t) => t.grupoId === grupo);
+  revisar("la tarea repetida se ve como una sola", (await enLista())?.titulo, "Prueba rutina");
+  revisar("con sus tres días", (await enLista())?.dias, [1, 3, 5]);
+
+  // Editarla la cambia en todos sus días.
+  await consultar(
+    `UPDATE tarea_plantilla SET titulo = 'Prueba editada', franja = 'TARDE'
+      WHERE grupo_id = $1`,
+    [grupo],
+  );
+  const cambiadas = await consultar<{ t: number }>(
+    `SELECT COUNT(*)::int AS t FROM tarea_plantilla
+      WHERE grupo_id = $1 AND titulo = 'Prueba editada' AND franja = 'TARDE'`,
+    [grupo],
+  );
+  revisar("editar cambia todos los días", cambiadas[0]?.t, 3);
+  revisar("y sigue siendo una sola tarea", (await enLista())?.franja, "TARDE");
+
+  // Un día que nunca se marcó se borra; uno con historial se conserva.
+  const [lunes, miercoles] = await consultar<{ id: string }>(
+    `SELECT id FROM tarea_plantilla WHERE grupo_id = $1 AND dia_semana IN (1, 3)
+      ORDER BY dia_semana`,
+    [grupo],
+  );
+  await consultar(
+    `INSERT INTO tarea_hecha (id, plantilla_id, fecha, hecha)
+     VALUES ($1, $2, $3, TRUE)`,
+    [nuevoId(), miercoles.id, FECHA],
+  );
+
+  await consultar(`DELETE FROM tarea_plantilla WHERE id = $1`, [lunes.id]);
+  await consultar(`UPDATE tarea_plantilla SET activa = FALSE WHERE id = $1`, [
+    miercoles.id,
+  ]);
+  revisar("quitar días deja solo los que siguen", (await enLista())?.dias, [5]);
+
+  const historial = await consultarUna<{ t: number }>(
+    `SELECT COUNT(*)::int AS t FROM tarea_hecha WHERE plantilla_id = $1`,
+    [miercoles.id],
+  );
+  revisar("el día con historial lo conserva", historial?.t, 1);
+
+  // Sin días activos queda «quitada», pero no desaparece.
+  await consultar(
+    `UPDATE tarea_plantilla SET activa = FALSE WHERE grupo_id = $1`,
+    [grupo],
+  );
+  revisar("sin días queda quitada", (await enLista())?.quitada, true);
+  await consultar(
+    `UPDATE tarea_plantilla SET activa = TRUE WHERE grupo_id = $1`,
+    [grupo],
+  );
+  revisar("volver a poner la revive", (await enLista())?.dias, [3, 5]);
+
+  await consultar(`DELETE FROM tarea_plantilla WHERE grupo_id = $1`, [grupo]);
 
   // --- Cómo se pagó ----------------------------------------------
   // Una transferencia cuenta igual que el efectivo: la fórmula no cambia.

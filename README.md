@@ -8,7 +8,9 @@ Tres herramientas en un mismo proyecto:
 - **Fiados** (`/fiado`) — quién se llevó mercancía y todavía debe, con el saldo
   de cada persona y los abonos cuando pagan.
 - **Tareas del día** (`/tareas`) — la rutina de lunes a domingo. Es
-  independiente: tiene sus propias tablas y su propia navegación.
+  independiente: tiene sus propias tablas y su propia navegación. La rutina se
+  edita en `/tareas/rutina`: cada tarea se ve una sola vez con sus días, y
+  cambiarla la cambia en todos ellos.
 
 Next.js 15 (App Router) + PostgreSQL con SQL directo (`pg`). Sin ORM, sin paso
 de generación de código: lo que ves en `db/schema.sql` es lo que hay en la base.
@@ -212,12 +214,17 @@ src/lib/tareas.ts    Consultas del módulo de tareas.
 src/components/      UI, registro rápido, navegación y gráficas (SVG).
 ```
 
-Cuatro decisiones que conviene no romper:
+Cinco decisiones que conviene no romper:
 
 - **Los botones de navegación avisan que están cargando.** Todas las pantallas
   son `force-dynamic`: cada toque es un viaje al servidor. Sin ese aviso
   (`useLinkStatus`, en `src/components/nav.tsx`) la pantalla no cambia en nada
   mientras responde la base y el botón parece roto.
+- **Una tarea repetida son varias filas, unidas por `grupo_id`.** Cada día de
+  la semana tiene su fila en `tarea_plantilla` con su propio historial en
+  `tarea_hecha`; `grupo_id` es lo que las vuelve «una tarea» para editarlas
+  juntas. Al sacar un día, la fila se borra si nunca se marcó y se desactiva si
+  tiene historial — así nada de lo que ya se hizo se pierde.
 - **Los montos son enteros en pesos.** El peso no usa centavos, así que no hay
   decimales ni redondeos en ninguna parte.
 - **El esquema vive en `src/lib/esquema.ts`, no en un `.sql` suelto.** Vercel

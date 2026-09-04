@@ -36,6 +36,53 @@ export async function tareasDelDia(fecha: string): Promise<TareaDelDia[]> {
   return filas.map((f) => ({ ...f, hecha: f.hecha ?? false }));
 }
 
+export type TareaRutina = {
+  grupoId: string;
+  titulo: string;
+  detalle: string | null;
+  franja: Franja;
+  /** Los días en que la tarea está puesta. 1 = lunes … 7 = domingo. */
+  dias: number[];
+  /** Sin ningún día puesto, pero guardada porque tiene historial. */
+  quitada: boolean;
+};
+
+/**
+ * La rutina vista como tareas, no como filas.
+ *
+ * Una tarea que se repite son varias filas de `tarea_plantilla`, una por día,
+ * cada una con su propio historial. `grupo_id` es lo que las hace «la misma
+ * tarea», y es lo que permite editarlas juntas.
+ */
+export async function rutina(): Promise<TareaRutina[]> {
+  const filas = await consultar<{
+    grupo_id: string;
+    titulo: string;
+    detalle: string | null;
+    franja: Franja;
+    dias: number[] | null;
+  }>(
+    `SELECT COALESCE(grupo_id, id) AS grupo_id,
+            (array_agg(titulo ORDER BY dia_semana))[1]  AS titulo,
+            (array_agg(detalle ORDER BY dia_semana))[1] AS detalle,
+            (array_agg(franja ORDER BY dia_semana))[1]  AS franja,
+            array_agg(dia_semana ORDER BY dia_semana)
+              FILTER (WHERE activa) AS dias
+       FROM tarea_plantilla
+      GROUP BY COALESCE(grupo_id, id)
+      ORDER BY MIN(orden) ASC, 2 ASC`,
+  );
+
+  return filas.map((f) => ({
+    grupoId: f.grupo_id,
+    titulo: f.titulo,
+    detalle: f.detalle,
+    franja: f.franja,
+    dias: f.dias ?? [],
+    quitada: (f.dias ?? []).length === 0,
+  }));
+}
+
 /** Agrupa las tareas de un día por franja, en orden mañana → tarde → noche. */
 export function porFranja(tareas: TareaDelDia[]) {
   return ORDEN_FRANJA.map((franja) => ({

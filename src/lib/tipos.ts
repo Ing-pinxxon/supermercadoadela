@@ -83,6 +83,8 @@ export function esFranja(valor: string): valor is Franja {
 
 export type TareaPlantilla = {
   id: string;
+  /** Comparten grupo las filas que son la misma tarea en distintos días. */
+  grupo_id: string | null;
   titulo: string;
   detalle: string | null;
   dia_semana: number;

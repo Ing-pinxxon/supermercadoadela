@@ -40,6 +40,7 @@ export const TABLAS = [
 export const COLUMNAS_NUEVAS: { tabla: string; columna: string }[] = [
   { tabla: "movimiento", columna: "medio" },
   { tabla: "cierre_dia", columna: "venta_transferencia" },
+  { tabla: "tarea_plantilla", columna: "grupo_id" },
 ];
 
 // --- Diagnóstico -------------------------------------------------------
@@ -163,11 +164,15 @@ export async function sembrarRutina(): Promise<number> {
 
   let orden = 0;
   for (const t of TAREAS_INICIALES) {
+    // Un grupo por tarea: los días de una misma tarea van juntos, que es lo
+    // que permite editarla después de una sola vez.
+    const grupo = randomUUID();
     for (const dia of t.dias) {
       await consultar(
-        `INSERT INTO tarea_plantilla (id, titulo, detalle, dia_semana, franja, orden)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [randomUUID(), t.titulo, t.detalle ?? null, dia, t.franja, orden],
+        `INSERT INTO tarea_plantilla
+           (id, grupo_id, titulo, detalle, dia_semana, franja, orden)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [randomUUID(), grupo, t.titulo, t.detalle ?? null, dia, t.franja, orden],
       );
     }
     orden += 10;
