@@ -30,7 +30,7 @@ export default async function SemanaCaja({
 }: {
   searchParams: Promise<{ semana?: string }>;
 }) {
-  await exigirAdmin();
+  await exigirAdmin("/caja/semana");
 
   const { semana } = await searchParams;
   const referencia = esFechaValida(semana) ? semana : hoy();

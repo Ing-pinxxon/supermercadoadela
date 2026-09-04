@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE, puedeEntrar, rolDe } from "@/lib/sesion";
+import { COOKIE, puedeEntrar, rolDe, rutaParaPedirAdmin } from "@/lib/sesion";
 
 /** Lo que solo ve el administrador: la plata de la semana y el histórico. */
 const SOLO_ADMIN = ["/caja/semana", "/caja/historico", "/instalar"];
@@ -28,10 +28,12 @@ export function middleware(peticion: NextRequest) {
 
   const rol = rolDe(cookie);
   if (rol === "usuario" && SOLO_ADMIN.some((r) => pathname.startsWith(r))) {
-    // No existe para él: se lo devuelve a lo suyo, que es el día de hoy.
-    const destino = peticion.nextUrl.clone();
-    destino.pathname = "/caja";
-    destino.search = "";
+    // Se le pide la clave de administrador, y de ahí vuelve a donde iba. No se
+    // lo manda a otra pantalla: si la base está mal, esa también fallaría.
+    const destino = new URL(
+      rutaParaPedirAdmin(pathname + peticion.nextUrl.search),
+      peticion.url,
+    );
     return NextResponse.redirect(destino);
   }
 

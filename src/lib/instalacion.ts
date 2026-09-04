@@ -31,6 +31,17 @@ export const TABLAS = [
   "fiado",
 ] as const;
 
+/**
+ * Columnas que se agregaron después del primer despliegue. Si falta alguna, la
+ * base existe pero quedó vieja y la app falla aunque «todas las tablas» estén:
+ * es lo que /instalar tiene que decir para que el botón se entienda como
+ * «actualizar», no como «crear».
+ */
+export const COLUMNAS_NUEVAS: { tabla: string; columna: string }[] = [
+  { tabla: "movimiento", columna: "medio" },
+  { tabla: "cierre_dia", columna: "venta_transferencia" },
+];
+
 // --- Diagnóstico -------------------------------------------------------
 
 export type EstadoBase = {
@@ -42,6 +53,8 @@ export type EstadoBase = {
   /** Mensaje de error de la conexión, ya en cristiano. */
   error: string | null;
   faltan: string[];
+  /** "tabla.columna" de lo que se agregó después y la base todavía no tiene. */
+  columnasFaltantes: string[];
   tareasRutina: number;
   diasHistorico: number;
   diasRegistrados: number;
@@ -83,6 +96,7 @@ export async function estadoBase(): Promise<EstadoBase> {
       ? null
       : "No hay ninguna variable de conexión. En Vercel: Storage → conectar Neon, o Settings → Environment Variables → DATABASE_URL. Después hay que volver a desplegar.",
     faltan: [...TABLAS],
+    columnasFaltantes: COLUMNAS_NUEVAS.map((c) => `${c.tabla}.${c.columna}`),
     tareasRutina: 0,
     diasHistorico: 0,
     diasRegistrados: 0,
@@ -108,6 +122,16 @@ export async function estadoBase(): Promise<EstadoBase> {
   );
   const hay = new Set(existentes.map((f) => f.table_name));
   base.faltan = TABLAS.filter((t) => !hay.has(t));
+
+  const columnas = await consultar<{ table_name: string; column_name: string }>(
+    `SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = ANY($1)`,
+    [COLUMNAS_NUEVAS.map((c) => c.tabla)],
+  );
+  const tiene = new Set(columnas.map((c) => `${c.table_name}.${c.column_name}`));
+  base.columnasFaltantes = COLUMNAS_NUEVAS.map((c) => `${c.tabla}.${c.columna}`)
+    // Si la tabla entera falta, ya está en `faltan`; no se repite.
+    .filter((nombre) => hay.has(nombre.split(".")[0]) && !tiene.has(nombre));
 
   const contar = async (tabla: string) => {
     if (!hay.has(tabla)) return 0;

@@ -15,7 +15,7 @@ import { GraficaLineas, GraficaBarras } from "@/components/graficas";
 export const dynamic = "force-dynamic";
 
 export default async function Historico() {
-  await exigirAdmin();
+  await exigirAdmin("/caja/historico");
 
   const [archivo, actuales, resumen, porDia, conceptos] = await Promise.all([
     semanasArchivo(),

@@ -43,8 +43,32 @@ export function rolDe(cookie: string | undefined): Rol {
   if (!tienda) return "abierto";
   if (!cookie) return "usuario";
   if (admin && igual(cookie, admin)) return "admin";
-  if (igual(cookie, tienda)) return "usuario";
+  // Sin clave de administrador configurada no hay dos roles que separar: quien
+  // entra con la clave de la tienda manda. Si no, nadie podría entrar nunca a
+  // /instalar y la app quedaría sin forma de arreglarse.
+  if (igual(cookie, tienda)) return admin ? "usuario" : "admin";
   return "usuario";
+}
+
+/**
+ * A dónde mandar a quien pide una pantalla de administrador sin serlo.
+ *
+ * Nunca a otra pantalla de la app: si la base está mal, esa también falla y se
+ * queda dando vueltas entre el error y el rebote, sin manera de cambiar de
+ * clave. Se le pide la clave de administrador y se le devuelve a donde iba.
+ */
+export function rutaParaPedirAdmin(destino: string): string {
+  return `/entrar?admin=1&volver=${encodeURIComponent(destino)}`;
+}
+
+/**
+ * Valida el `volver` antes de usarlo: solo rutas de esta misma app, para que el
+ * parámetro no sirva para mandar a nadie a otro sitio.
+ */
+export function rutaSegura(valor: string | undefined): string | null {
+  if (!valor) return null;
+  if (!valor.startsWith("/") || valor.startsWith("//")) return null;
+  return valor;
 }
 
 /** True si la cookie sirve para entrar (cualquiera de las dos claves). */
@@ -72,6 +96,6 @@ export async function esAdmin(): Promise<boolean> {
  * navegación; esto cubre lo que el middleware no ve (las server actions) y
  * deja la regla escrita al lado de lo que protege.
  */
-export async function exigirAdmin(): Promise<void> {
-  if (!(await esAdmin())) redirect("/caja");
+export async function exigirAdmin(destino = "/instalar"): Promise<void> {
+  if (!(await esAdmin())) redirect(rutaParaPedirAdmin(destino));
 }

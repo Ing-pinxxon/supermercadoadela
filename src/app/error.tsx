@@ -21,8 +21,10 @@ export default function Error({
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
       <h1 className="text-xl font-bold">No se pudo cargar la información</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Casi siempre es la base de datos: falta la variable de conexión, o las
-        tablas todavía no están creadas.
+        Casi siempre es la base de datos: falta la variable de conexión, las
+        tablas no están creadas, o la app se actualizó y a la base le falta
+        algo nuevo. Todo eso se arregla desde «Revisar la base de datos», con la
+        clave de administrador.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -38,6 +40,15 @@ export default function Error({
         >
           Reintentar
         </button>
+        {/* Siempre tiene que haber una salida: si la sesión guardada es la de
+            la tienda, /instalar pide la de administrador y sin esto no habría
+            cómo cambiarla. */}
+        <a
+          href="/salir"
+          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-500 underline-offset-2 hover:underline"
+        >
+          Entrar con otra clave
+        </a>
       </div>
 
       {(error.message || error.digest) && (

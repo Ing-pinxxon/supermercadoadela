@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Campo, Texto } from "@/components/ui";
 import { Boton } from "@/components/boton";
-import { COOKIE, puedeEntrar } from "@/lib/sesion";
+import { COOKIE, puedeEntrar, rolDe, rutaSegura } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +12,18 @@ async function entrar(datos: FormData) {
   const pin = process.env.APP_PIN;
   if (!pin) redirect("/");
 
+  const volver = rutaSegura(String(datos.get("volver") ?? "")) ?? "/";
+  const pideAdmin = String(datos.get("admin") ?? "") === "1";
+  const deVuelta = (error: string) =>
+    `/entrar?error=${error}${pideAdmin ? "&admin=1" : ""}&volver=${encodeURIComponent(volver)}`;
+
   // Sirve cualquiera de las dos claves; la que se usó decide lo que se ve.
   const escrita = String(datos.get("pin") ?? "");
-  if (!puedeEntrar(escrita)) redirect("/entrar?error=1");
+  if (!puedeEntrar(escrita)) redirect(deVuelta("1"));
+
+  // Si venía a una pantalla de administrador, la clave de la tienda no basta:
+  // se lo dice en vez de dejarlo entrar y rebotarlo otra vez.
+  if (pideAdmin && rolDe(escrita) !== "admin") redirect(deVuelta("admin"));
 
   const galletas = await cookies();
   galletas.set(COOKIE, escrita, {
@@ -25,15 +34,17 @@ async function entrar(datos: FormData) {
     maxAge: 60 * 60 * 24 * 30, // un mes
   });
 
-  redirect("/");
+  redirect(volver);
 }
 
 export default async function Entrar({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; admin?: string; volver?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, admin, volver } = await searchParams;
+  const pideAdmin = admin === "1";
+  const destino = rutaSegura(volver) ?? "/";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
@@ -44,10 +55,18 @@ export default async function Entrar({
         <h1 className="text-2xl font-bold tracking-tight">
           Supermercado Adela
         </h1>
-        <p className="mt-1 text-sm text-gray-500">Escribe la clave.</p>
+        {pideAdmin ? (
+          <p className="mt-1 text-sm text-gray-600">
+            Esa pantalla es del administrador. Escribe su clave para seguir.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-gray-500">Escribe la clave.</p>
+        )}
 
         <form action={entrar} className="mt-6 space-y-3">
-          <Campo etiqueta="Clave">
+          <input type="hidden" name="volver" value={destino} />
+          {pideAdmin && <input type="hidden" name="admin" value="1" />}
+          <Campo etiqueta={pideAdmin ? "Clave de administrador" : "Clave"}>
             <Texto
               name="pin"
               type="password"
@@ -56,15 +75,29 @@ export default async function Entrar({
               required
             />
           </Campo>
-          {error && (
+          {error === "1" && (
             <p className="pop rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
               Clave incorrecta.
+            </p>
+          )}
+          {error === "admin" && (
+            <p className="pop rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+              Esa es la clave de la tienda. Para esta pantalla hace falta la
+              del administrador.
             </p>
           )}
           <Boton type="submit" className="w-full">
             Entrar
           </Boton>
         </form>
+
+        {pideAdmin && (
+          <p className="mt-4 text-center text-xs text-gray-400">
+            <a href="/caja" className="hover:underline">
+              Volver a la caja sin cambiar de clave
+            </a>
+          </p>
+        )}
       </div>
     </main>
   );

@@ -73,6 +73,10 @@ mismo se puede hacer desde el navegador en `/instalar`, sin consola.
 La app no lee ninguna variable en el build: si algo falla, falla en `/instalar`,
 que dice exactamente qué es.
 
+**Cada vez que se despliega una versión nueva**, conviene abrir `/instalar`
+(con la clave de administrador) y, si dice «la base está desactualizada», darle
+a **Actualizar la base**: agrega lo nuevo sin tocar lo que ya hay.
+
 ### Si algo sale mal
 
 Todo se diagnostica en `/instalar`, que muestra qué variable se está usando,
@@ -82,6 +86,12 @@ contra qué servidor habla, qué tablas hay y cuántas filas tiene cada cosa.
   proyecto, o se conectó después del último despliegue. Conecta y **Redeploy**.
 - **«La base rechazó el usuario o la clave»** → vuelve a copiar la cadena desde
   Neon (*Connection string*, la versión **pooled**).
+- **«Esa pantalla es del administrador»** al abrir `/instalar` → la sesión
+  guardada es la de la tienda. Escribe la clave de administrador ahí mismo y
+  vuelve a donde ibas. Desde la pantalla de error, «Entrar con otra clave» hace
+  lo mismo.
+- **«La base está desactualizada»** → dale a **Actualizar la base**. Pasa
+  después de desplegar una versión que trae columnas o tablas nuevas.
 - **Faltan tablas** → dale a **Crear tablas y rutina**. Es la causa más común
   del error al abrir `/caja` o `/tareas` recién desplegado: la conexión está
   bien, pero la base está vacía.
@@ -115,7 +125,9 @@ La clave con la que se entra decide lo que se ve; arriba a la derecha dice si
 se entró como «Tienda» o como «Admin», y ahí mismo se sale.
 
 Si no hay `APP_PIN`, la app queda abierta y todo el mundo ve todo: es el modo
-de trabajar en local.
+de trabajar en local. Si hay `APP_PIN` pero no `APP_PIN_ADMIN`, quien entra con
+la clave de la tienda es administrador — sin eso nadie podría llegar a
+`/instalar`.
 
 Los fiados los ve y los registra todo el mundo, con el total incluido.
 

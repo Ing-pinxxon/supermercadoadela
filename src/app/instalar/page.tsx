@@ -38,7 +38,14 @@ function Punto({
 
 export default async function Instalar() {
   const e = await estadoBase();
-  const tablasListas = e.conectada && e.faltan.length === 0;
+  // «Desactualizada» = ya hay una base en uso (alguna tabla existe) pero le
+  // falta algo que la app nueva necesita: tablas o columnas. Distinto de una
+  // base vacía, donde lo que toca es crear todo.
+  const hayAlgo = e.faltan.length < TABLAS.length;
+  const desactualizada =
+    hayAlgo && (e.faltan.length > 0 || e.columnasFaltantes.length > 0);
+  const tablasListas =
+    e.conectada && e.faltan.length === 0 && e.columnasFaltantes.length === 0;
   const todoListo = tablasListas && e.tareasRutina > 0;
 
   return (
@@ -77,6 +84,24 @@ export default async function Instalar() {
             >
               {e.faltan.length > 0 && <>Faltan: {e.faltan.join(", ")}.</>}
             </Punto>
+            {hayAlgo && (
+              <Punto
+                ok={!desactualizada}
+                titulo={
+                  desactualizada
+                    ? "La base está desactualizada"
+                    : "La base está al día con la app"
+                }
+              >
+                {desactualizada && (
+                  <>
+                    La app se actualizó y a la base le falta:{" "}
+                    {[...e.faltan, ...e.columnasFaltantes].join(", ")}. El
+                    botón de abajo lo agrega sin tocar lo que ya hay.
+                  </>
+                )}
+              </Punto>
+            )}
             <Punto
               ok={e.tareasRutina > 0}
               titulo={`Rutina de tareas: ${e.tareasRutina}`}
@@ -86,7 +111,11 @@ export default async function Instalar() {
             </Punto>
             <form action={prepararBase} className="mt-3">
               <Boton type="submit" variante={todoListo ? "secundario" : "principal"}>
-                {todoListo ? "Volver a revisar" : "Crear tablas y rutina"}
+                {todoListo
+                  ? "Volver a revisar"
+                  : desactualizada
+                    ? "Actualizar la base"
+                    : "Crear tablas y rutina"}
               </Boton>
             </form>
           </Tarjeta>
