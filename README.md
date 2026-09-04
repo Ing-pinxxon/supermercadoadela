@@ -1,9 +1,12 @@
 # Supermercado Adela
 
-Dos herramientas en un mismo proyecto:
+Tres herramientas en un mismo proyecto:
 
-- **Caja** (`/caja`) — reemplaza la hoja "TIENDA". Registro rápido de pagos y
-  entradas de plata, cierre del día, semana e histórico.
+- **Caja** (`/caja`) — reemplaza la hoja "TIENDA". Abre en el día de hoy:
+  registro rápido de pagos y entradas de plata, cierre del día, semana e
+  histórico.
+- **Fiados** (`/fiado`) — quién se llevó mercancía y todavía debe, con el saldo
+  de cada persona y los abonos cuando pagan.
 - **Tareas del día** (`/tareas`) — la rutina de lunes a domingo. Es
   independiente: tiene sus propias tablas y su propia navegación.
 
@@ -27,6 +30,20 @@ ingreso bruto del día = venta en efectivo + salidas − entradas
 Toda la aritmética vive en `src/lib/caja.ts`. Ninguna pantalla calcula plata por
 su cuenta.
 
+Tres cosas que conviene tener claras, porque deciden dónde entra cada peso:
+
+- **Una transferencia cuenta igual que el efectivo.** Un pago a proveedor hecho
+  por Nequi entra en las salidas y suma al ingreso bruto como cualquier otro. El
+  medio queda anotado para saber después por dónde se movió la plata, pero no
+  cambia la cuenta.
+- **La venta por transferencia va aparte.** El ingreso bruto sigue siendo la
+  fórmula de arriba, que es de caja. Al lado aparece «todo lo que se vendió»,
+  que es el bruto más esa venta.
+- **Fiar no mueve la caja; abonar sí.** Cuando alguien se lleva algo fiado solo
+  nace la deuda. Cuando abona, esa plata entra al cajón sin ser venta del día,
+  así que se registra como una entrada — el mismo papel que «Prestados ayer».
+  Por eso cada abono crea su movimiento de caja, y borrar uno borra el otro.
+
 ## Arrancar en local
 
 ```bash
@@ -46,7 +63,7 @@ mismo se puede hacer desde el navegador en `/instalar`, sin consola.
    una que ya tengas). Neon queda conectada y Vercel escribe las variables de
    conexión solas.
 3. Pestaña **Settings → Environment Variables**: agrega `APP_PIN` con la clave
-   del negocio.
+   del negocio y `APP_PIN_ADMIN` con la del administrador.
 4. **Deployments → Redeploy.** Las variables solo entran en un despliegue nuevo:
    si conectaste la base después de desplegar, este paso es obligatorio.
 5. Abre `https://tu-app.vercel.app/instalar`, entra con la clave y dale a
@@ -80,13 +97,27 @@ Neon (`POSTGRES_URL`, `DATABASE_URL_UNPOOLED`, …); `/instalar` dice cuál tom�
 2. En el mismo proyecto, **New → Database → PostgreSQL**.
 3. En el servicio de la app, pestaña **Variables**:
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
-   - `APP_PIN` = la clave del negocio.
+   - `APP_PIN` = la clave del negocio, `APP_PIN_ADMIN` = la del administrador.
 4. Railway detecta Next.js solo. Build: `npm run build`, start: `npm start`.
 5. Una sola vez, para crear las tablas: `railway run npm run db:setup` (o abre
    `/instalar` en la app y dale al botón).
 
-La app queda detrás de una clave única compartida (`APP_PIN`, cookie de un mes).
-No son cuentas por persona: es para que la URL no quede abierta a internet.
+## Las dos claves
+
+- `APP_PIN` — la de la tienda. Registra pagos, fía, recibe abonos y marca
+  tareas. **No ve** los totales de la semana ni el histórico: esas pantallas ni
+  siquiera le aparecen en el menú.
+- `APP_PIN_ADMIN` — la del administrador. Ve todo, incluidas la semana, el
+  histórico y `/instalar`.
+
+Son claves compartidas del negocio, no cuentas por persona (cookie de un mes).
+La clave con la que se entra decide lo que se ve; arriba a la derecha dice si
+se entró como «Tienda» o como «Admin», y ahí mismo se sale.
+
+Si no hay `APP_PIN`, la app queda abierta y todo el mundo ve todo: es el modo
+de trabajar en local.
+
+Los fiados los ve y los registra todo el mundo, con el total incluido.
 
 ## El día a día
 
@@ -102,8 +133,14 @@ Las variantes de escritura se agrupan solas para los totales: «Mac pollo»,
 **Cuando entra plata que no es venta** (prestados de ayer, un aporte): lo mismo,
 pero con «Entró plata».
 
-**Al cerrar**: se anota la venta en efectivo. El ingreso bruto se calcula solo y
-queda arriba de la pantalla.
+**Al cerrar**: se anota la venta en efectivo y, aparte, la que entró por
+transferencia. El ingreso bruto se calcula solo y queda al final de la pantalla,
+debajo de todo lo que se registró.
+
+**Cuando alguien fía**: en `/fiado` se busca o se crea la persona y se anota lo
+que se llevó. Cuando abona, el botón «Abonó» — eso baja su saldo y entra a la
+caja del día solo. El nombre se agrupa igual que los proveedores: «Doña Rosa» y
+«dona rosa» son la misma persona.
 
 **En la semana** (`/caja`): la misma tabla de la hoja — cada día con sus salidas,
 entradas, venta e ingreso, más los totales. Abajo, en qué se fue la plata esa
@@ -151,17 +188,24 @@ e2e.mjs              Prueba de navegador de los formularios.
 import/parser.mjs    Lee la hoja de cálculo. El ANCLA de fechas está acá.
 import/importar.mjs  Carga el archivo histórico en la base (versión de consola).
 import/hoja.json     La exportación de la hoja "TIENDA".
+src/app/fiado/       Los fiados: lista de deudores y ficha de cada uno.
 src/app/instalar/    Pantalla de estado de la base, protegida por la clave.
 src/lib/db.ts        Pool de conexiones y helpers de consulta.
 src/lib/fechas.ts    Fechas como texto "YYYY-MM-DD". Lee el comentario de arriba.
 src/lib/caja.ts      TODA la aritmética de caja vive aquí.
+src/lib/fiados.ts    Saldos y movimientos de los fiados.
+src/lib/sesion.ts    Las dos claves y qué puede ver cada una.
 src/lib/historico.ts Consultas del archivo y la comparación con el año actual.
 src/lib/tareas.ts    Consultas del módulo de tareas.
-src/components/      UI, registro rápido y gráficas (SVG, sin librerías).
+src/components/      UI, registro rápido, navegación y gráficas (SVG).
 ```
 
-Tres decisiones que conviene no romper:
+Cuatro decisiones que conviene no romper:
 
+- **Los botones de navegación avisan que están cargando.** Todas las pantallas
+  son `force-dynamic`: cada toque es un viaje al servidor. Sin ese aviso
+  (`useLinkStatus`, en `src/components/nav.tsx`) la pantalla no cambia en nada
+  mientras responde la base y el botón parece roto.
 - **Los montos son enteros en pesos.** El peso no usa centavos, así que no hay
   decimales ni redondeos en ninguna parte.
 - **El esquema vive en `src/lib/esquema.ts`, no en un `.sql` suelto.** Vercel
@@ -187,6 +231,7 @@ registros de la semana del 2 de septiembre de 2026.
 
 ## Qué falta / siguientes pasos
 
+- Fecha límite y aviso para los fiados que llevan mucho sin abonar.
 - Exportar a Excel para el contador.
 - Vista mensual, además de la semanal.
 - Cuentas por persona, si se quiere saber quién registró cada cosa.

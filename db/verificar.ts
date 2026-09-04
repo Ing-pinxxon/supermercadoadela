@@ -19,6 +19,8 @@ import {
   semanasArchivo,
 } from "../src/lib/historico";
 import { diaSemana, lunesDe, sumarDias } from "../src/lib/fechas";
+import { deudores, movimientosDe, saldoDe, totalCartera } from "../src/lib/fiados";
+import { clave } from "../src/lib/texto";
 
 const FECHA = "2026-09-02"; // miércoles
 let fallos = 0;
@@ -39,13 +41,49 @@ async function limpiar() {
   await consultar(`DELETE FROM cierre_dia WHERE fecha = ANY($1)`, [semana]);
   await consultar(`DELETE FROM tarea_hecha WHERE fecha = ANY($1)`, [semana]);
   await consultar(`DELETE FROM semana WHERE lunes = $1`, [lunesDe(FECHA)]);
+  // Los deudores de prueba, con sus movimientos (van en cascada).
+  await consultar(`DELETE FROM deudor WHERE clave LIKE 'prueba%'`);
 }
 
-async function movimiento(tipo: string, concepto: string, monto: number) {
+async function movimiento(
+  tipo: string,
+  concepto: string,
+  monto: number,
+  medio = "EFECTIVO",
+) {
   await consultar(
-    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [nuevoId(), FECHA, tipo, concepto, monto],
+    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto, medio)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [nuevoId(), FECHA, tipo, concepto, monto, medio],
+  );
+}
+
+/** Crea (o encuentra) un deudor de prueba y devuelve su id. */
+async function crearDeudor(nombre: string): Promise<string> {
+  const fila = await consultarUna<{ id: string }>(
+    `INSERT INTO deudor (id, nombre, clave) VALUES ($1, $2, $3)
+     ON CONFLICT (clave) DO UPDATE SET nombre = deudor.nombre
+     RETURNING id`,
+    [nuevoId(), nombre, `prueba${clave(nombre)}`],
+  );
+  return fila!.id;
+}
+
+/** Anota un fiado o un abono; el abono también entra a la caja del día. */
+async function fiar(deudorId: string, tipo: "FIADO" | "ABONO", monto: number) {
+  let movimientoId: string | null = null;
+  if (tipo === "ABONO") {
+    movimientoId = nuevoId();
+    await consultar(
+      `INSERT INTO movimiento (id, fecha, tipo, concepto, monto)
+       VALUES ($1, $2, 'ENTRADA', 'Abono prueba', $3)`,
+      [movimientoId, FECHA, monto],
+    );
+  }
+  await consultar(
+    `INSERT INTO fiado (id, deudor_id, fecha, tipo, monto, movimiento_id)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [nuevoId(), deudorId, FECHA, tipo, monto, movimientoId],
   );
 }
 
@@ -150,6 +188,89 @@ async function main() {
 
   revisar("avance cubre 7 días", (await avanceSemana(FECHA)).detalle.length, 7);
   revisar("día de semana correcto", diaSemana(FECHA), 3);
+
+  // --- Cómo se pagó ----------------------------------------------
+  // Una transferencia cuenta igual que el efectivo: la fórmula no cambia.
+  await movimiento("SALIDA", "Colanta", 100000, "TRANSFERENCIA");
+  const conTransf = await resumenDia(FECHA);
+  revisar("la transferencia suma a las salidas", conTransf.salidas, 630000);
+  revisar(
+    "y por lo tanto al ingreso bruto",
+    conTransf.ingresoBruto,
+    1330000, // 1.000.000 + 630.000 − 300.000
+  );
+  revisar(
+    "queda contado aparte cuánto fue por transferencia",
+    conTransf.salidasTransferencia,
+    100000,
+  );
+
+  // La venta por transferencia va aparte: no toca el bruto, sí el total.
+  await consultar(
+    `UPDATE cierre_dia SET venta_transferencia = 200000 WHERE fecha = $1`,
+    [FECHA],
+  );
+  const conVenta = await resumenDia(FECHA);
+  revisar("la venta por transferencia no toca el bruto", conVenta.ingresoBruto, 1330000);
+  revisar("pero sí el total vendido", conVenta.totalVendido, 1530000);
+  revisar(
+    "la semana también lo lleva aparte",
+    (await resumenSemana(FECHA)).totales.totalVendido,
+    1530000,
+  );
+
+  // --- Fiados ----------------------------------------------------
+  const rosa = await crearDeudor("Doña Rosa");
+  revisar(
+    "el mismo nombre escrito distinto es la misma persona",
+    await crearDeudor("dona rosa"),
+    rosa,
+  );
+
+  await fiar(rosa, "FIADO", 80000);
+  revisar("fiar deja la deuda", await saldoDe(rosa), 80000);
+  revisar(
+    "pero no mueve la caja",
+    (await resumenDia(FECHA)).ingresoBruto,
+    1330000,
+  );
+
+  await fiar(rosa, "ABONO", 30000);
+  revisar("abonar baja el saldo", await saldoDe(rosa), 50000);
+  const conAbono = await resumenDia(FECHA);
+  revisar("el abono entra a la caja", conAbono.entradas, 330000);
+  revisar(
+    "y por eso baja el ingreso bruto",
+    conAbono.ingresoBruto,
+    1300000, // la plata del abono no es venta de hoy
+  );
+
+  // El total de la cartera es la suma de los saldos: se compara contra la
+  // lista, no contra un número fijo, porque en la base puede haber más gente.
+  const lista = await deudores();
+  revisar(
+    "la cartera suma los saldos de todos",
+    (await totalCartera()).total,
+    lista.reduce((s, d) => s + d.saldo, 0),
+  );
+  revisar(
+    "y aparece en la lista de deudores",
+    lista.find((d) => d.id === rosa)?.saldo,
+    50000,
+  );
+
+  // Borrar el abono se lleva también su entrada de caja.
+  const delAbono = (await movimientosDe(rosa)).find((m) => m.tipo === "ABONO");
+  await consultar(`DELETE FROM movimiento WHERE id = $1`, [
+    delAbono?.movimiento_id,
+  ]);
+  await consultar(`DELETE FROM fiado WHERE id = $1`, [delAbono?.id]);
+  revisar("borrado el abono, vuelve a deber todo", await saldoDe(rosa), 80000);
+  revisar(
+    "y la caja queda como estaba",
+    (await resumenDia(FECHA)).ingresoBruto,
+    1330000,
+  );
 
   // --- El archivo no se toca -------------------------------------
   const antes = await consultarUna<{ total: number }>(

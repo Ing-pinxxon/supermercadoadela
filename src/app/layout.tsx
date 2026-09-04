@@ -3,13 +3,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Supermercado Adela",
-  description: "Control de caja, proveedores y rutina diaria.",
+  description: "Caja, fiados y rutina diaria del negocio.",
+  appleWebApp: { capable: true, title: "Adela", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#15803d",
 };
 
 export default function RootLayout({

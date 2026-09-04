@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { consultar, nuevoId } from "@/lib/db";
 import { esFechaValida, lunesDe } from "@/lib/fechas";
 import { leerMonto, leerTexto } from "@/lib/dinero";
-import { esTipo } from "@/lib/tipos";
+import { esMedio, esTipo } from "@/lib/tipos";
+import { exigirAdmin } from "@/lib/sesion";
 
 function fechaDe(datos: FormData): string {
   const f = String(datos.get("fecha") ?? "");
@@ -14,7 +15,7 @@ function fechaDe(datos: FormData): string {
 
 function refrescar(fecha: string) {
   revalidatePath(`/caja/dia/${fecha}`);
-  revalidatePath("/caja");
+  revalidatePath("/caja/semana");
   revalidatePath("/caja/historico");
 }
 
@@ -29,13 +30,23 @@ export async function agregarMovimiento(datos: FormData) {
 
   const crudo = String(datos.get("tipo") ?? "SALIDA");
   const tipo = esTipo(crudo) ? crudo : "SALIDA";
+  const comoPago = String(datos.get("medio") ?? "EFECTIVO");
+  const medio = esMedio(comoPago) ? comoPago : "EFECTIVO";
   const monto = leerMonto(datos.get("monto"));
   if (monto === 0) return;
 
   await consultar(
-    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto, nota)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [nuevoId(), fecha, tipo, concepto, monto, leerTexto(datos.get("nota"))],
+    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto, medio, nota)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [
+      nuevoId(),
+      fecha,
+      tipo,
+      concepto,
+      monto,
+      medio,
+      leerTexto(datos.get("nota")),
+    ],
   );
 
   refrescar(fecha);
@@ -48,20 +59,23 @@ export async function borrarMovimiento(datos: FormData) {
   refrescar(fecha);
 }
 
-/** La venta en efectivo del día y la observación. */
+/** La venta del día (efectivo y transferencia aparte) y la observación. */
 export async function guardarVenta(datos: FormData) {
   const fecha = fechaDe(datos);
 
   await consultar(
-    `INSERT INTO cierre_dia (fecha, venta_efectivo, observaciones)
-     VALUES ($1, $2, $3)
+    `INSERT INTO cierre_dia
+       (fecha, venta_efectivo, venta_transferencia, observaciones)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (fecha) DO UPDATE SET
-       venta_efectivo = EXCLUDED.venta_efectivo,
-       observaciones  = EXCLUDED.observaciones,
-       actualizado_en = now()`,
+       venta_efectivo      = EXCLUDED.venta_efectivo,
+       venta_transferencia = EXCLUDED.venta_transferencia,
+       observaciones       = EXCLUDED.observaciones,
+       actualizado_en      = now()`,
     [
       fecha,
       leerMonto(datos.get("ventaEfectivo")),
+      leerMonto(datos.get("ventaTransferencia")),
       leerTexto(datos.get("observaciones")),
     ],
   );
@@ -80,8 +94,9 @@ export async function alternarCerrado(datos: FormData) {
   refrescar(fecha);
 }
 
-/** Conteo de efectivo al cerrar la semana. */
+/** Conteo de efectivo al cerrar la semana. Es cosa del administrador. */
 export async function guardarCuentaSemana(datos: FormData) {
+  await exigirAdmin();
   const fecha = fechaDe(datos);
   const lunes = lunesDe(fecha);
   const crudo = datos.get("cuentaEfectivo");
@@ -97,5 +112,5 @@ export async function guardarCuentaSemana(datos: FormData) {
     [lunes, cuenta, leerTexto(datos.get("notaSemana"))],
   );
 
-  revalidatePath("/caja");
+  revalidatePath("/caja/semana");
 }

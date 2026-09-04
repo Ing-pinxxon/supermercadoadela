@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { tareasDelDia } from "@/lib/tareas";
 import {
   esFechaValida,
@@ -7,6 +6,7 @@ import {
   sumarDias,
 } from "@/lib/fechas";
 import { Tarjeta } from "@/components/ui";
+import { Flechas } from "@/components/nav";
 import { Checklist } from "@/components/checklist";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export default async function TareasHoy({
   const pct = tareas.length > 0 ? Math.round((hechas / tareas.length) * 100) : 0;
 
   return (
-    <div className="space-y-5">
+    <div className="escalonado space-y-5">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">{etiquetaLarga(fecha)}</h1>
@@ -32,31 +32,16 @@ export default async function TareasHoy({
             {hechas} de {tareas.length} hechas
           </p>
         </div>
-        <div className="flex gap-2 text-sm">
-          <Link
-            href={`/tareas?dia=${sumarDias(fecha, -1)}`}
-            className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-300"
-          >
-            ←
-          </Link>
-          <Link
-            href="/tareas"
-            className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-300"
-          >
-            Hoy
-          </Link>
-          <Link
-            href={`/tareas?dia=${sumarDias(fecha, 1)}`}
-            className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-300"
-          >
-            →
-          </Link>
-        </div>
+        <Flechas
+          atras={`/tareas?dia=${sumarDias(fecha, -1)}`}
+          hoy={fecha === hoy() ? undefined : "/tareas"}
+          adelante={`/tareas?dia=${sumarDias(fecha, 1)}`}
+        />
       </div>
 
       <div className="h-2 overflow-hidden rounded-full bg-gray-200">
         <div
-          className="h-full rounded-full bg-marca-500 transition-all"
+          className="h-full rounded-full bg-gradient-to-r from-marca-400 to-marca-600 transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>

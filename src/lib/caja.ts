@@ -1,16 +1,23 @@
 import { consultar, consultarUna } from "@/lib/db";
 import { diaSemana, lunesDe, semanaDe, sumarDias } from "@/lib/fechas";
+import { claveSql } from "@/lib/texto";
 import type { CierreDia, Movimiento } from "@/lib/tipos";
 
 export type ResumenDia = {
   fecha: string;
   /** Todo lo que salió de la caja: proveedores, mercado, trabajador, gastos. */
   salidas: number;
-  /** Plata que entró sin ser venta del día: prestados, venta de ayer, aportes. */
+  /** De esas salidas, cuánto se pagó por transferencia. No cambia la cuenta. */
+  salidasTransferencia: number;
+  /** Plata que entró sin ser venta del día: prestados, abonos, aportes. */
   entradas: number;
   ventaEfectivo: number;
-  /** venta efectivo + salidas − entradas. La fórmula de la hoja. */
+  /** Venta que entró por Nequi o transferencia. Va aparte de la de efectivo. */
+  ventaTransferencia: number;
+  /** venta efectivo + salidas − entradas. La fórmula de la hoja, de caja. */
   ingresoBruto: number;
+  /** El bruto más lo que se vendió por transferencia: todo lo que se vendió. */
+  totalVendido: number;
   cerrado: boolean;
   observaciones: string | null;
   /** Hay algo registrado ese día (venta o movimientos). */
@@ -26,9 +33,17 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
     consultarUna<CierreDia>(`SELECT * FROM cierre_dia WHERE fecha = $1`, [
       fecha,
     ]),
-    consultarUna<{ salidas: number; entradas: number; cuantos: number }>(
+    consultarUna<{
+      salidas: number;
+      salidas_transferencia: number;
+      entradas: number;
+      cuantos: number;
+    }>(
       `SELECT
          COALESCE(SUM(monto) FILTER (WHERE tipo = 'SALIDA'), 0)::int  AS salidas,
+         COALESCE(SUM(monto) FILTER (WHERE tipo = 'SALIDA'
+                                       AND medio = 'TRANSFERENCIA'), 0)::int
+           AS salidas_transferencia,
          COALESCE(SUM(monto) FILTER (WHERE tipo = 'ENTRADA'), 0)::int AS entradas,
          COUNT(*)::int AS cuantos
        FROM movimiento WHERE fecha = $1`,
@@ -39,13 +54,18 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
   const salidas = totales?.salidas ?? 0;
   const entradas = totales?.entradas ?? 0;
   const ventaEfectivo = cierre?.venta_efectivo ?? 0;
+  const ventaTransferencia = cierre?.venta_transferencia ?? 0;
+  const ingresoBruto = ventaEfectivo + salidas - entradas;
 
   return {
     fecha,
     salidas,
+    salidasTransferencia: totales?.salidas_transferencia ?? 0,
     entradas,
     ventaEfectivo,
-    ingresoBruto: ventaEfectivo + salidas - entradas,
+    ventaTransferencia,
+    ingresoBruto,
+    totalVendido: ingresoBruto + ventaTransferencia,
     cerrado: cierre?.cerrado ?? false,
     observaciones: cierre?.observaciones ?? null,
     hayDatos: cierre !== null || (totales?.cuantos ?? 0) > 0,
@@ -74,11 +94,22 @@ export async function resumenSemana(fecha: string) {
   const totales = detalle.reduce(
     (a, d) => ({
       salidas: a.salidas + d.salidas,
+      salidasTransferencia: a.salidasTransferencia + d.salidasTransferencia,
       entradas: a.entradas + d.entradas,
       ventaEfectivo: a.ventaEfectivo + d.ventaEfectivo,
+      ventaTransferencia: a.ventaTransferencia + d.ventaTransferencia,
       ingresoBruto: a.ingresoBruto + d.ingresoBruto,
+      totalVendido: a.totalVendido + d.totalVendido,
     }),
-    { salidas: 0, entradas: 0, ventaEfectivo: 0, ingresoBruto: 0 },
+    {
+      salidas: 0,
+      salidasTransferencia: 0,
+      entradas: 0,
+      ventaEfectivo: 0,
+      ventaTransferencia: 0,
+      ingresoBruto: 0,
+      totalVendido: 0,
+    },
   );
 
   return {
@@ -136,13 +167,10 @@ export async function conceptosSugeridos(fecha: string) {
 
 /**
  * Clave para agrupar conceptos escritos distinto: "Mac pollo", "Macpollo" y
- * "Mac Pollo" son el mismo proveedor. Baja a minúsculas, quita tildes y borra
- * todo lo que no sea letra o número (espacios, paréntesis, puntos).
+ * "Mac Pollo" son el mismo proveedor. La misma normalización que se usa con
+ * los nombres de los deudores (ver src/lib/texto.ts).
  */
-export const CLAVE_CONCEPTO = `
-  regexp_replace(
-    lower(translate(concepto, 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunAEIOUUN')),
-    '[^a-z0-9]', '', 'g')`;
+export const CLAVE_CONCEPTO = claveSql("concepto");
 
 /**
  * Los conceptos en los que más se gastó en un rango, agrupando las variantes de

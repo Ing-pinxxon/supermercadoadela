@@ -27,6 +27,8 @@ export const TABLAS = [
   "historico_detalle",
   "tarea_plantilla",
   "tarea_hecha",
+  "deudor",
+  "fiado",
 ] as const;
 
 // --- Diagnóstico -------------------------------------------------------

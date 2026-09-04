@@ -9,6 +9,7 @@ import {
   sumarDias,
 } from "@/lib/fechas";
 import { Tarjeta } from "@/components/ui";
+import { Flechas } from "@/components/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function SemanaTareas({
   const hoyStr = hoy();
 
   return (
-    <div className="space-y-5">
+    <div className="escalonado space-y-5">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">Semana</h1>
@@ -34,20 +35,11 @@ export default async function SemanaTareas({
             {hechas}/{total} tareas
           </p>
         </div>
-        <div className="flex gap-2 text-sm">
-          <Link
-            href={`/tareas/semana?semana=${sumarDias(lunes, -7)}`}
-            className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-300"
-          >
-            ←
-          </Link>
-          <Link
-            href={`/tareas/semana?semana=${sumarDias(lunes, 7)}`}
-            className="rounded-lg bg-white px-3 py-2 ring-1 ring-gray-300"
-          >
-            →
-          </Link>
-        </div>
+        <Flechas
+          atras={`/tareas/semana?semana=${sumarDias(lunes, -7)}`}
+          hoy="/tareas/semana"
+          adelante={`/tareas/semana?semana=${sumarDias(lunes, 7)}`}
+        />
       </div>
 
       <div className="grid gap-3">

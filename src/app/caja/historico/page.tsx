@@ -9,11 +9,14 @@ import {
 import { DIAS, etiquetaCorta } from "@/lib/fechas";
 import { pesos } from "@/lib/dinero";
 import { Tarjeta, Vacio } from "@/components/ui";
+import { exigirAdmin } from "@/lib/sesion";
 import { GraficaLineas, GraficaBarras } from "@/components/graficas";
 
 export const dynamic = "force-dynamic";
 
 export default async function Historico() {
+  await exigirAdmin();
+
   const [archivo, actuales, resumen, porDia, conceptos] = await Promise.all([
     semanasArchivo(),
     semanasActuales(),
@@ -28,8 +31,8 @@ export default async function Historico() {
         <h1 className="text-xl font-bold">Histórico</h1>
         <Tarjeta>
           <Vacio>
-            No hay archivo cargado. Se importa con{" "}
-            <code>node import/importar.mjs --escribir</code>.
+            No hay archivo cargado. Se carga con el botón «Cargar histórico»
+            de <code>/instalar</code>.
           </Vacio>
         </Tarjeta>
       </div>

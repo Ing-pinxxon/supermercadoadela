@@ -14,7 +14,7 @@ export function Tarjeta({
 }) {
   return (
     <section
-      className={`rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 ${className}`}
+      className={`rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 transition hover:shadow-md ${className}`}
     >
       {(titulo || accion) && (
         <header className="mb-3 flex items-center justify-between gap-2">
@@ -130,4 +130,89 @@ export function Volver({ href, texto }: { href: string; texto: string }) {
       ← {texto}
     </Link>
   );
+}
+
+/** Una etiqueta pequeña: «Transf.», «Admin», «Día cerrado». */
+export function Insignia({
+  children,
+  tono = "gris",
+}: {
+  children: React.ReactNode;
+  tono?: "gris" | "marca" | "acento" | "rojo";
+}) {
+  const color = {
+    gris: "bg-gray-100 text-gray-600",
+    marca: "bg-marca-100 text-marca-700",
+    acento: "bg-acento-100 text-acento-700",
+    rojo: "bg-red-50 text-red-600",
+  }[tono];
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${color}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * El número grande de una pantalla: el ingreso del día, lo que se debe. Va en
+ * su propia tarjeta de color para que se distinga del resto de la información.
+ */
+export function Cifra({
+  titulo,
+  valor,
+  pie,
+  tono = "marca",
+  children,
+}: {
+  titulo: string;
+  valor: string;
+  pie?: string;
+  tono?: "marca" | "acento";
+  children?: React.ReactNode;
+}) {
+  const fondo =
+    tono === "marca"
+      ? "from-marca-500 to-marca-700 shadow-marca-500/25"
+      : "from-acento-500 to-acento-700 shadow-acento-500/25";
+  return (
+    <section
+      className={`rounded-2xl bg-gradient-to-br ${fondo} p-4 text-white shadow-lg`}
+    >
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-white/70">
+        {titulo}
+      </h2>
+      <div className="tabular mt-1 text-3xl font-bold">{valor}</div>
+      {pie && <p className="mt-0.5 text-xs text-white/70">{pie}</p>}
+      {children && (
+        <div className="mt-3 border-t border-dashed border-white/25 pt-2">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Una fila de la tarjeta de cifra, en blanco sobre el color. */
+export function FilaClara({
+  etiqueta,
+  valor,
+}: {
+  etiqueta: string;
+  valor: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className="text-sm text-white/80">{etiqueta}</span>
+      <span className="tabular shrink-0 whitespace-nowrap text-sm font-semibold">
+        {valor}
+      </span>
+    </div>
+  );
+}
+
+/** Bloque gris que late mientras carga una pantalla (ver los loading.tsx). */
+export function Esqueleto({ className = "" }: { className?: string }) {
+  return <div className={`esqueleto ${className}`} />;
 }

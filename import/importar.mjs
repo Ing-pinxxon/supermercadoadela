@@ -113,9 +113,11 @@ if (!ESCRIBIR) {
   process.exit(0);
 }
 
+const local = cadena.includes("localhost") || cadena.includes("127.0.0.1");
 const pool = new Pool({
   connectionString: cadena,
-  ssl: cadena.includes("localhost") ? undefined : { rejectUnauthorized: false },
+  // Railway, Neon y Supabase usan certificados que Node no trae de fábrica.
+  ssl: local ? undefined : { rejectUnauthorized: false },
 });
 
 const cliente = await pool.connect();

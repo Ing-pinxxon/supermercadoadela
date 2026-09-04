@@ -104,4 +104,58 @@ CREATE TABLE IF NOT EXISTS tarea_hecha (
 );
 
 CREATE INDEX IF NOT EXISTS tarea_hecha_fecha_idx ON tarea_hecha (fecha);
+
+-- --- Cómo se pagó ---------------------------------------------------
+-- Se agregan con ALTER para que una base que ya está en uso se actualice
+-- sola, sin perder nada. Correrlo de nuevo no hace daño.
+--
+-- El medio es una etiqueta: un pago por transferencia cuenta en las salidas
+-- y en el ingreso bruto igual que uno en efectivo. Sirve para saber después
+-- por dónde salió la plata, no para cambiar la cuenta.
+
+ALTER TABLE movimiento
+  ADD COLUMN IF NOT EXISTS medio TEXT NOT NULL DEFAULT 'EFECTIVO';
+ALTER TABLE movimiento DROP CONSTRAINT IF EXISTS movimiento_medio_check;
+ALTER TABLE movimiento
+  ADD CONSTRAINT movimiento_medio_check
+  CHECK (medio IN ('EFECTIVO', 'TRANSFERENCIA'));
+
+-- La venta que entra por Nequi o transferencia se lleva aparte de la de
+-- efectivo: el ingreso bruto sigue siendo la fórmula de caja de la hoja.
+ALTER TABLE cierre_dia
+  ADD COLUMN IF NOT EXISTS venta_transferencia INTEGER NOT NULL DEFAULT 0;
+
+-- --- Fiados ---------------------------------------------------------
+-- Quien se lleva mercancía y paga después. Es su propio módulo: fiar no toca
+-- la caja (no entró ni salió plata, solo nace la deuda) y abonar sí, con un
+-- movimiento de ENTRADA enlazado.
+
+CREATE TABLE IF NOT EXISTS deudor (
+  id         TEXT PRIMARY KEY,
+  nombre     TEXT NOT NULL,
+  -- Nombre normalizado (minúsculas, sin tildes ni espacios). Es UNIQUE para
+  -- que "Doña Rosa" y "dona rosa" no queden como dos personas distintas.
+  clave      TEXT NOT NULL UNIQUE,
+  telefono   TEXT,
+  nota       TEXT,
+  creado_en  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS fiado (
+  id         TEXT PRIMARY KEY,
+  deudor_id  TEXT NOT NULL REFERENCES deudor(id) ON DELETE CASCADE,
+  fecha      DATE NOT NULL,
+  tipo       TEXT NOT NULL CHECK (tipo IN ('FIADO', 'ABONO')),
+  monto      INTEGER NOT NULL CHECK (monto > 0),
+  medio      TEXT NOT NULL DEFAULT 'EFECTIVO'
+             CHECK (medio IN ('EFECTIVO', 'TRANSFERENCIA')),
+  nota       TEXT,
+  -- El abono también entra a la caja. Se enlaza para que borrar el abono
+  -- borre su entrada y la caja no quede descuadrada.
+  movimiento_id TEXT REFERENCES movimiento(id) ON DELETE SET NULL,
+  creado_en  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS fiado_deudor_idx ON fiado (deudor_id);
+CREATE INDEX IF NOT EXISTS fiado_fecha_idx ON fiado (fecha);
 `;
