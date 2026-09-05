@@ -58,6 +58,7 @@ await pool.query(`DELETE FROM cierre_dia WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
 await pool.query(`DELETE FROM tarea_hecha WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
 await pool.query(`DELETE FROM semana WHERE lunes = '2026-09-14'`);
 await pool.query(`DELETE FROM deudor WHERE clave LIKE 'e2e%'`);
+await pool.query(`DELETE FROM semana WHERE lunes = '2026-09-14'`);
 // La prueba 8 renombra una tarea de la rutina; se le devuelve su nombre.
 await pool.query(
   `UPDATE tarea_plantilla SET titulo = 'Abrir y contar base de caja'
@@ -74,12 +75,25 @@ if (process.env.APP_PIN_ADMIN || process.env.APP_PIN) {
   await page.waitForLoadState("networkidle");
 }
 
+/** El aviso «Guardado ✓» solo sale cuando la acción terminó: es mejor señal
+ *  que esperar un tiempo fijo, que en una máquina cargada se queda corto. */
+async function esperarAviso() {
+  await page
+    .waitForFunction(
+      () => (document.querySelector('[role="status"]')?.textContent ?? "").trim() !== "",
+      null,
+      { timeout: 15000 },
+    )
+    .catch(() => {});
+  await page.waitForTimeout(400);
+}
+
 async function registrar(concepto, monto, boton = "Pagué", medio) {
   await page.fill("#concepto", concepto);
   await page.fill('input[name="monto"]', monto);
   if (medio) await page.click(`button:has-text("${medio}")`);
   await page.click(`button:has-text("${boton}")`);
-  await page.waitForTimeout(1200);
+  await esperarAviso();
 }
 
 // 1. Registro rápido de salidas
@@ -188,6 +202,20 @@ try {
   cambio = false;
 }
 revisar("marcar una tarea cambia el contador", cambio, `(era "${antes}")`);
+
+// 7b. Sacar de la caja de días anteriores
+await page.goto(`${BASE}/caja/dia/${DIA}`);
+await page.fill('input[name="monto"]', "300000");
+await page.click('button:has-text("Saqué de la caja")');
+await esperarAviso();
+texto = await page.textContent("body");
+revisar("avisa que sacó de la caja", texto.includes("Sacaste"));
+await page.reload({ waitUntil: "networkidle" });
+texto = await page.textContent("body");
+revisar("el retiro queda marcado en las entradas", texto.includes("De la caja"));
+// Antes del retiro el ingreso iba en 1.330.000; los 300.000 sacados de la
+// caja no son venta de hoy, así que lo bajan a 1.030.000.
+revisar("el retiro no cuenta como venta de hoy", texto.includes("1.030.000"));
 
 // 8. Editar una tarea de la rutina
 await page.goto(`${BASE}/tareas/rutina`);

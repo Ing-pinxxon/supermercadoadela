@@ -41,6 +41,8 @@ export const COLUMNAS_NUEVAS: { tabla: string; columna: string }[] = [
   { tabla: "movimiento", columna: "medio" },
   { tabla: "cierre_dia", columna: "venta_transferencia" },
   { tabla: "tarea_plantilla", columna: "grupo_id" },
+  { tabla: "movimiento", columna: "de_caja" },
+  { tabla: "semana", columna: "caja_inicial" },
 ];
 
 // --- Diagnóstico -------------------------------------------------------

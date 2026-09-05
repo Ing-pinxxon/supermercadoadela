@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { agregarMovimiento } from "@/app/caja/actions";
+import { agregarMovimiento, sacarDeCaja } from "@/app/caja/actions";
 import { pesos } from "@/lib/dinero";
 import { Aviso, useAviso } from "@/components/aviso";
 import type { Medio } from "@/lib/tipos";
@@ -32,6 +32,27 @@ function Botones() {
         Entró plata
       </button>
     </div>
+  );
+}
+
+/**
+ * «Saqué de la caja»: usa el mismo monto de arriba y no pide concepto, porque
+ * el concepto siempre sería el mismo. Por eso lleva `formNoValidate`: el campo
+ * de concepto es obligatorio para los otros dos botones, no para este.
+ */
+function BotonCaja() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      name="accion"
+      value="CAJA"
+      formNoValidate
+      disabled={pending}
+      className="min-h-11 w-full rounded-full px-4 text-sm font-semibold text-tinta ring-1 ring-crema-200/40 transition active:scale-[.97] hover:bg-crema-200/10 disabled:opacity-50"
+    >
+      Saqué de la caja de días anteriores
+    </button>
   );
 }
 
@@ -66,14 +87,21 @@ export function RegistroRapido({
           concepto: String(datos.get("concepto") ?? ""),
           monto: Number(String(datos.get("monto") ?? "").replace(/[^\d-]/g, "")),
           entrada: String(datos.get("tipo") ?? "") === "ENTRADA",
+          deCaja: String(datos.get("accion") ?? "") === "CAJA",
         };
 
-        await agregarMovimiento(datos);
+        if (guardado.deCaja) {
+          await sacarDeCaja(datos);
+        } else {
+          await agregarMovimiento(datos);
+        }
 
         setConcepto("");
         setMedio("EFECTIVO");
         formRef.current?.reset();
-        if (guardado.concepto && guardado.monto) {
+        if (guardado.deCaja && guardado.monto > 0) {
+          setAviso(`Sacaste ${pesos(guardado.monto)} de la caja`);
+        } else if (guardado.concepto && guardado.monto) {
           setAviso(
             `${guardado.entrada ? "Entró" : "Pagado"} ${pesos(
               guardado.monto,
@@ -141,12 +169,18 @@ export function RegistroRapido({
       )}
 
       <Botones />
+      <BotonCaja />
       <Aviso texto={aviso} />
 
       <p className="text-xs text-tinta-suave">
         «Pagué» es plata que sale (proveedor, mercado, trabajador). «Entró plata»
         es lo que entra sin ser venta del día: prestados, abonos de fiados,
         aportes. Para una devolución, escribe el monto en negativo.
+      </p>
+      <p className="text-xs text-tinta-suave">
+        «Saqué de la caja» es para pagar con plata de días anteriores: escribe
+        solo el monto. Esa plata no cuenta como venta de hoy y se descuenta de
+        la caja; el pago se registra aparte con «Pagué».
       </p>
     </form>
   );

@@ -3,7 +3,9 @@ import {
   resumenDia,
   movimientosDelDia,
   conceptosSugeridos,
+  cajaSemana,
 } from "@/lib/caja";
+import { esAdmin } from "@/lib/sesion";
 import { esFechaValida, etiquetaLarga, hoy, sumarDias } from "@/lib/fechas";
 import { pesos } from "@/lib/dinero";
 import {
@@ -33,10 +35,12 @@ export default async function DiaCaja({
   const { fecha } = await params;
   if (!esFechaValida(fecha)) notFound();
 
-  const [resumen, movimientos, sugerencias] = await Promise.all([
+  const [resumen, movimientos, sugerencias, caja, admin] = await Promise.all([
     resumenDia(fecha),
     movimientosDelDia(fecha),
     conceptosSugeridos(fecha),
+    cajaSemana(fecha),
+    esAdmin(),
   ]);
 
   const salidas = movimientos.filter((m) => m.tipo === "SALIDA");
@@ -59,6 +63,14 @@ export default async function DiaCaja({
           adelante={`/caja/dia/${sumarDias(fecha, 1)}`}
         />
       </div>
+
+      {/* El saldo de la caja es plata de la semana: solo lo ve el admin. */}
+      {admin && (
+        <p className="flex items-baseline justify-between gap-3 rounded-xl bg-superficie px-4 py-2.5 text-sm ring-1 ring-borde">
+          <span className="text-tinta-suave">En la caja quedan</span>
+          <span className="tabular font-bold">{pesos(caja.saldo)}</span>
+        </p>
+      )}
 
       {/* --- Lo primero: registrar ------------------------------- */}
       <Tarjeta titulo="Registrar">
@@ -137,6 +149,12 @@ export default async function DiaCaja({
           etiqueta="Entradas (abonos, prestados)"
           valor={`−${pesos(resumen.entradas)}`}
         />
+        {resumen.retiros > 0 && (
+          <FilaClara
+            etiqueta="De eso, sacado de la caja"
+            valor={pesos(resumen.retiros)}
+          />
+        )}
       </Cifra>
 
       {(resumen.ventaTransferencia > 0 || resumen.salidasTransferencia > 0) && (
@@ -199,6 +217,7 @@ function ListaMovimientos({
                 <div className="min-w-0">
                   <div className="truncate font-medium">{m.concepto}</div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
+                    {m.de_caja && <Insignia tono="marca">De la caja</Insignia>}
                     {m.medio === "TRANSFERENCIA" && (
                       <Insignia>Transferencia</Insignia>
                     )}

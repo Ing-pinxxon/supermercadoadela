@@ -94,9 +94,50 @@ export async function alternarCerrado(datos: FormData) {
   refrescar(fecha);
 }
 
+/**
+ * Sacar plata de la caja de días anteriores para pagar algo hoy.
+ *
+ * Se guarda como una ENTRADA marcada con `de_caja`: para la cuenta del día es
+ * plata que entró al cajón sin ser venta (por eso no infla el ingreso), y para
+ * la caja es lo que la baja. El pago se sigue registrando aparte con «Pagué».
+ */
+export async function sacarDeCaja(datos: FormData) {
+  const fecha = fechaDe(datos);
+  const monto = leerMonto(datos.get("monto"));
+  if (monto <= 0) return;
+
+  await consultar(
+    `INSERT INTO movimiento
+       (id, fecha, tipo, concepto, monto, medio, de_caja, nota)
+     VALUES ($1, $2, 'ENTRADA', 'De la caja', $3, 'EFECTIVO', TRUE, $4)`,
+    [nuevoId(), fecha, monto, leerTexto(datos.get("nota"))],
+  );
+
+  refrescar(fecha);
+}
+
+/** Con cuánta plata arranca la semana. Es cosa del administrador. */
+export async function guardarCajaInicial(datos: FormData) {
+  await exigirAdmin("/caja/semana");
+  const fecha = fechaDe(datos);
+  const lunes = lunesDe(fecha);
+  const crudo = datos.get("cajaInicial");
+  const base = leerTexto(crudo) === null ? null : leerMonto(crudo);
+
+  await consultar(
+    `INSERT INTO semana (lunes, caja_inicial) VALUES ($1, $2)
+     ON CONFLICT (lunes) DO UPDATE SET
+       caja_inicial = EXCLUDED.caja_inicial, actualizado_en = now()`,
+    [lunes, base],
+  );
+
+  revalidatePath("/caja/semana");
+  revalidatePath(`/caja/dia/${fecha}`);
+}
+
 /** Conteo de efectivo al cerrar la semana. Es cosa del administrador. */
 export async function guardarCuentaSemana(datos: FormData) {
-  await exigirAdmin();
+  await exigirAdmin("/caja/semana");
   const fecha = fechaDe(datos);
   const lunes = lunesDe(fecha);
   const crudo = datos.get("cuentaEfectivo");

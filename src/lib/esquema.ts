@@ -176,4 +176,17 @@ UPDATE tarea_plantilla t SET grupo_id = g.primero
 
 CREATE INDEX IF NOT EXISTS tarea_plantilla_grupo_idx
   ON tarea_plantilla (grupo_id);
+
+-- --- La caja de días anteriores -------------------------------------
+-- La plata del negocio es una sola bolsa: lo que sobra de un día queda para
+-- el siguiente. Cuando se paga un pedido con plata de días anteriores, se
+-- anota como una ENTRADA marcada con de_caja:
+--   * para la cuenta del día es una entrada más (así esa plata no cuenta
+--     como venta de hoy, igual que "Prestados ayer" en la hoja);
+--   * para la caja es lo que la baja.
+ALTER TABLE movimiento
+  ADD COLUMN IF NOT EXISTS de_caja BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Con cuánta plata arranca la semana. Lo escribe el administrador.
+ALTER TABLE semana ADD COLUMN IF NOT EXISTS caja_inicial INTEGER;
 `;

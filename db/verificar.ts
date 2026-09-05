@@ -8,6 +8,7 @@ import { consultar, consultarUna, nuevoId, pool } from "../src/lib/db";
 import {
   resumenDia,
   resumenSemana,
+  cajaSemana,
   movimientosDelDia,
   conceptosSugeridos,
   mayoresConceptos,
@@ -18,7 +19,7 @@ import {
   compararPromedios,
   semanasArchivo,
 } from "../src/lib/historico";
-import { diaSemana, lunesDe, sumarDias } from "../src/lib/fechas";
+import { diaSemana, hoy, lunesDe, sumarDias } from "../src/lib/fechas";
 import { deudores, movimientosDe, saldoDe, totalCartera } from "../src/lib/fiados";
 import { clave } from "../src/lib/texto";
 
@@ -338,6 +339,77 @@ async function main() {
     (await resumenDia(FECHA)).ingresoBruto,
     1330000,
   );
+
+  // --- La caja de días anteriores --------------------------------
+  // El ejemplo del negocio: la caja va en 1.000.000, se venden 800.000, se
+  // sacan 300.000 de la caja y se pagan 1.000.000 en pedidos.
+  //
+  // Va sobre el día de HOY a propósito: un día que ya pasó cuenta como
+  // terminado, y lo que se quiere probar es justo la diferencia entre el día
+  // en curso y el día ya cerrado.
+  const HOY = hoy();
+  const LUNES = lunesDe(HOY);
+  // La caja mira la semana entera, así que hay que limpiarla toda: la semana
+  // de hoy puede ser la misma de FECHA y arrastraría los movimientos de los
+  // casos de arriba.
+  const limpiarCaja = async () => {
+    const semana = Array.from({ length: 7 }, (_, i) => sumarDias(LUNES, i));
+    await consultar(`DELETE FROM movimiento WHERE fecha = ANY($1)`, [semana]);
+    await consultar(`DELETE FROM cierre_dia WHERE fecha = ANY($1)`, [semana]);
+    await consultar(`DELETE FROM semana WHERE lunes = $1`, [LUNES]);
+  };
+  await limpiarCaja();
+
+  await consultar(
+    `INSERT INTO semana (lunes, caja_inicial) VALUES ($1, 1000000)`,
+    [LUNES],
+  );
+  revisar("la caja arranca con lo que se le puso", (await cajaSemana(HOY)).saldo, 1000000);
+
+  await consultar(
+    `INSERT INTO cierre_dia (fecha, venta_efectivo) VALUES ($1, 800000)`,
+    [HOY],
+  );
+  await consultar(
+    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto, de_caja)
+     VALUES ($1, $2, 'ENTRADA', 'De la caja', 300000, TRUE)`,
+    [nuevoId(), HOY],
+  );
+  await consultar(
+    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto)
+     VALUES ($1, $2, 'SALIDA', 'Pedidos', 1000000)`,
+    [nuevoId(), HOY],
+  );
+
+  // Con el día todavía en curso, la caja solo baja por lo que se sacó.
+  revisar("sacar de la caja la baja", (await cajaSemana(HOY)).saldo, 700000);
+
+  const conRetiro = await resumenDia(HOY);
+  revisar("el retiro cuenta como entrada del día", conRetiro.entradas, 300000);
+  revisar("y se ve aparte cuánto fue de la caja", conRetiro.retiros, 300000);
+  // 800.000 + 1.000.000 − 300.000: los 300.000 no cuentan como venta de hoy.
+  revisar("esa plata no cuenta como venta de hoy", conRetiro.ingresoBruto, 1500000);
+
+  // Al cerrar el día entra lo que dejó: 800.000 − 1.000.000 = −200.000.
+  await consultar(`UPDATE cierre_dia SET cerrado = TRUE WHERE fecha = $1`, [HOY]);
+  const cerrada = await cajaSemana(HOY);
+  revisar("al cerrar el día la caja cuadra", cerrada.saldo, 800000);
+  revisar("y el retiro ya no se resta dos veces", cerrada.sacado, 0);
+
+  // Un abono de fiado sí es plata nueva: suma a la caja.
+  await consultar(
+    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto)
+     VALUES ($1, $2, 'ENTRADA', 'Abono de alguien', 50000)`,
+    [nuevoId(), HOY],
+  );
+  revisar("un abono sí suma a la caja", (await cajaSemana(HOY)).saldo, 850000);
+
+  // Borrar el retiro con el día abierto devuelve la plata a la caja.
+  await consultar(`UPDATE cierre_dia SET cerrado = FALSE WHERE fecha = $1`, [HOY]);
+  await consultar(`DELETE FROM movimiento WHERE fecha = $1 AND de_caja`, [HOY]);
+  revisar("borrar el retiro devuelve la plata", (await cajaSemana(HOY)).saldo, 1000000);
+
+  await limpiarCaja();
 
   // --- El archivo no se toca -------------------------------------
   const antes = await consultarUna<{ total: number }>(

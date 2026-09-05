@@ -15,13 +15,14 @@ import {
   Campo,
   Monto,
   Texto,
+  Fila,
   Vacio,
   Cifra,
   FilaClara,
 } from "@/components/ui";
 import { Boton } from "@/components/boton";
 import { Flechas } from "@/components/nav";
-import { guardarCuentaSemana } from "../actions";
+import { guardarCuentaSemana, guardarCajaInicial } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -187,6 +188,36 @@ export default async function SemanaCaja({
             ))}
           </ul>
         )}
+      </Tarjeta>
+
+      <Tarjeta titulo="Caja de la semana">
+        <form action={guardarCajaInicial} className="space-y-3">
+          <input type="hidden" name="fecha" value={lunes} />
+          <Campo
+            etiqueta="Con cuánto arrancó la semana"
+            ayuda="La plata que había guardada el lunes, antes de vender nada."
+          >
+            <Monto name="cajaInicial" defaultValue={r.caja.base || ""} />
+          </Campo>
+          <Boton type="submit">Guardar</Boton>
+        </form>
+
+        <div className="mt-3 border-t border-dashed border-borde pt-2">
+          <Fila etiqueta="Arrancó con" valor={r.caja.base} tono="suave" />
+          <Fila etiqueta="Dejaron los días cerrados" valor={r.caja.entrado} />
+          {/* Sin retiros el monto es cero: en negativo saldría «−$ 0». */}
+          <Fila
+            etiqueta="Sacado para pagar hoy"
+            valor={r.caja.sacado === 0 ? 0 : -r.caja.sacado}
+          />
+          <Fila etiqueta="Queda en la caja" valor={r.caja.saldo} fuerte />
+        </div>
+
+        <p className="mt-2 text-xs text-tinta-suave">
+          {r.caja.sinBase
+            ? "Todavía no has puesto con cuánto arrancó la semana, así que la caja cuenta desde cero."
+            : "El día en curso entra a la caja cuando lo cierres o cuando pase."}
+        </p>
       </Tarjeta>
 
       <Tarjeta titulo="Cuenta de efectivo">

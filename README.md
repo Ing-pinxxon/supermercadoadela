@@ -32,6 +32,19 @@ ingreso bruto del día = venta en efectivo + salidas − entradas
 Toda la aritmética vive en `src/lib/caja.ts`. Ninguna pantalla calcula plata por
 su cuenta.
 
+**La caja de la semana** es la plata que queda de días anteriores:
+
+```
+caja = con cuánto arrancó la semana
+     + lo que dejó cada día que ya terminó   (venta efectivo + entradas − salidas)
+     − lo que se sacó en el día en curso
+```
+
+Los retiros no cuentan como «entrada» en esa suma: esa plata ya estaba en la
+caja, sumarla sería contarla dos veces. Un día cuenta como terminado cuando se
+marca cerrado o cuando ya pasó. El saldo lo ve solo el administrador; el botón
+para sacar lo usa cualquiera.
+
 Tres cosas que conviene tener claras, porque deciden dónde entra cada peso:
 
 - **Una transferencia cuenta igual que el efectivo.** Un pago a proveedor hecho
@@ -41,6 +54,9 @@ Tres cosas que conviene tener claras, porque deciden dónde entra cada peso:
 - **La venta por transferencia va aparte.** El ingreso bruto sigue siendo la
   fórmula de arriba, que es de caja. Al lado aparece «todo lo que se vendió»,
   que es el bruto más esa venta.
+- **Sacar de la caja no es un gasto.** Es decir de dónde salió la plata: para
+  el día cuenta como una entrada (por eso esos pesos no cuentan como venta de
+  hoy) y para la caja es lo que la baja. El pago se registra aparte.
 - **Fiar no mueve la caja; abonar sí.** Cuando alguien se lleva algo fiado solo
   nace la deuda. Cuando abona, esa plata entra al cajón sin ser venta del día,
   así que se registra como una entrada — el mismo papel que «Prestados ayer».
@@ -151,6 +167,11 @@ pero con «Entró plata».
 transferencia. El ingreso bruto se calcula solo y queda al final de la pantalla,
 debajo de todo lo que se registró.
 
+**Cuando se paga con plata de días anteriores**: en la pantalla del día,
+escribes el monto y le das a «Saqué de la caja». Eso no registra el gasto —el
+pago se anota aparte con «Pagué», como siempre—; solo dice de dónde salió la
+plata, para que no cuente como venta de hoy y para descontarla de la caja.
+
 **Cuando alguien fía**: en `/fiado` se busca o se crea la persona y se anota lo
 que se llevó. Cuando abona, el botón «Abonó» — eso baja su saldo y entra a la
 caja del día solo. El nombre se agrupa igual que los proveedores: «Doña Rosa» y
@@ -208,6 +229,7 @@ src/lib/db.ts        Pool de conexiones y helpers de consulta.
 src/lib/fechas.ts    Fechas como texto "YYYY-MM-DD". Lee el comentario de arriba.
 src/lib/caja.ts      TODA la aritmética de caja vive aquí.
 src/lib/fiados.ts    Saldos y movimientos de los fiados.
+                     (la caja de la semana está en caja.ts, con lo demás)
 src/lib/sesion.ts    Las dos claves y qué puede ver cada una.
 src/lib/historico.ts Consultas del archivo y la comparación con el año actual.
 src/lib/tareas.ts    Consultas del módulo de tareas.

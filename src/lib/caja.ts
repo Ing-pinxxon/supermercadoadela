@@ -1,5 +1,5 @@
 import { consultar, consultarUna } from "@/lib/db";
-import { diaSemana, lunesDe, semanaDe, sumarDias } from "@/lib/fechas";
+import { diaSemana, hoy, lunesDe, semanaDe, sumarDias } from "@/lib/fechas";
 import { claveSql } from "@/lib/texto";
 import type { CierreDia, Movimiento } from "@/lib/tipos";
 
@@ -11,6 +11,8 @@ export type ResumenDia = {
   salidasTransferencia: number;
   /** Plata que entró sin ser venta del día: prestados, abonos, aportes. */
   entradas: number;
+  /** De esas entradas, cuánta se sacó de la caja de días anteriores. */
+  retiros: number;
   ventaEfectivo: number;
   /** Venta que entró por Nequi o transferencia. Va aparte de la de efectivo. */
   ventaTransferencia: number;
@@ -37,6 +39,7 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
       salidas: number;
       salidas_transferencia: number;
       entradas: number;
+      retiros: number;
       cuantos: number;
     }>(
       `SELECT
@@ -45,6 +48,8 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
                                        AND medio = 'TRANSFERENCIA'), 0)::int
            AS salidas_transferencia,
          COALESCE(SUM(monto) FILTER (WHERE tipo = 'ENTRADA'), 0)::int AS entradas,
+         COALESCE(SUM(monto) FILTER (WHERE tipo = 'ENTRADA'
+                                       AND de_caja), 0)::int AS retiros,
          COUNT(*)::int AS cuantos
        FROM movimiento WHERE fecha = $1`,
       [fecha],
@@ -62,6 +67,7 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
     salidas,
     salidasTransferencia: totales?.salidas_transferencia ?? 0,
     entradas,
+    retiros: totales?.retiros ?? 0,
     ventaEfectivo,
     ventaTransferencia,
     ingresoBruto,
@@ -72,6 +78,83 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
   };
 }
 
+/**
+ * Un día «terminó» si ya lo marcaron cerrado o si ya pasó. Lo segundo es la
+ * red de seguridad: si se olvidan de marcarlo, la cuenta igual cuadra al día
+ * siguiente. `$3` es la fecha de hoy.
+ */
+const TERMINADO = `(COALESCE(c.cerrado, FALSE) OR c.fecha < $3)`;
+
+export type CajaSemana = {
+  /** Con cuánto arrancó la semana. Lo escribe el administrador. */
+  base: number;
+  /** Lo que dejaron los días que ya terminaron. Puede ser negativo. */
+  entrado: number;
+  /** Lo que se sacó en los días que aún no terminan. */
+  sacado: number;
+  saldo: number;
+  /** True si nadie ha puesto la base de esta semana todavía. */
+  sinBase: boolean;
+};
+
+/**
+ * La plata que queda de días anteriores.
+ *
+ *   caja = base + lo que dejó cada día ya terminado − lo que se sacó hoy
+ *
+ * «Lo que dejó un día» es `venta efectivo + entradas − salidas`, pero sin
+ * contar los retiros: esa plata ya estaba en la caja, sumarla sería contarla
+ * dos veces. Y un día cuenta como terminado si está marcado como cerrado o si
+ * ya pasó — así el saldo se actualiza al cerrar, y si se olvidan de marcarlo,
+ * igual cuadra al día siguiente.
+ */
+export async function cajaSemana(fecha: string): Promise<CajaSemana> {
+  const lunes = lunesDe(fecha);
+  const domingo = sumarDias(lunes, 6);
+
+  const [semana, movidas, ventas] = await Promise.all([
+    consultarUna<{ caja_inicial: number | null }>(
+      `SELECT caja_inicial FROM semana WHERE lunes = $1`,
+      [lunes],
+    ),
+    consultarUna<{ entrado: number; sacado: number }>(
+      `SELECT
+         COALESCE(SUM(
+           CASE WHEN m.tipo = 'SALIDA' THEN -m.monto
+                -- El retiro no suma: esa plata ya estaba en la caja.
+                WHEN m.de_caja THEN 0
+                ELSE m.monto END
+         ) FILTER (WHERE (COALESCE(c.cerrado, FALSE) OR m.fecha < $3)), 0)::int AS entrado,
+         COALESCE(SUM(m.monto)
+           FILTER (WHERE m.de_caja
+                       AND NOT (COALESCE(c.cerrado, FALSE) OR m.fecha < $3)),
+           0)::int AS sacado
+       FROM movimiento m
+       LEFT JOIN cierre_dia c ON c.fecha = m.fecha
+      WHERE m.fecha BETWEEN $1 AND $2`,
+      [lunes, domingo, hoy()],
+    ),
+    consultarUna<{ venta: number }>(
+      `SELECT COALESCE(SUM(venta_efectivo), 0)::int AS venta
+         FROM cierre_dia c
+        WHERE c.fecha BETWEEN $1 AND $2 AND ${TERMINADO}`,
+      [lunes, domingo, hoy()],
+    ),
+  ]);
+
+  const base = semana?.caja_inicial ?? 0;
+  const entrado = (movidas?.entrado ?? 0) + (ventas?.venta ?? 0);
+  const sacado = movidas?.sacado ?? 0;
+
+  return {
+    base,
+    entrado,
+    sacado,
+    saldo: base + entrado - sacado,
+    sinBase: (semana?.caja_inicial ?? null) === null,
+  };
+}
+
 export type ResumenSemana = Awaited<ReturnType<typeof resumenSemana>>;
 
 /** Resumen de los 7 días de la semana a la que pertenece `fecha`. */
@@ -79,8 +162,9 @@ export async function resumenSemana(fecha: string) {
   const lunes = lunesDe(fecha);
   const dias = semanaDe(fecha);
 
-  const [detalle, cuentaEsta, cuentaAnterior] = await Promise.all([
+  const [detalle, caja, cuentaEsta, cuentaAnterior] = await Promise.all([
     Promise.all(dias.map(resumenDia)),
+    cajaSemana(lunes),
     consultarUna<{ cuenta_efectivo: number | null; nota: string | null }>(
       `SELECT cuenta_efectivo, nota FROM semana WHERE lunes = $1`,
       [lunes],
@@ -96,6 +180,7 @@ export async function resumenSemana(fecha: string) {
       salidas: a.salidas + d.salidas,
       salidasTransferencia: a.salidasTransferencia + d.salidasTransferencia,
       entradas: a.entradas + d.entradas,
+      retiros: a.retiros + d.retiros,
       ventaEfectivo: a.ventaEfectivo + d.ventaEfectivo,
       ventaTransferencia: a.ventaTransferencia + d.ventaTransferencia,
       ingresoBruto: a.ingresoBruto + d.ingresoBruto,
@@ -105,6 +190,7 @@ export async function resumenSemana(fecha: string) {
       salidas: 0,
       salidasTransferencia: 0,
       entradas: 0,
+      retiros: 0,
       ventaEfectivo: 0,
       ventaTransferencia: 0,
       ingresoBruto: 0,
@@ -117,6 +203,7 @@ export async function resumenSemana(fecha: string) {
     dias,
     detalle,
     totales,
+    caja,
     cuentaEfectivo: cuentaEsta?.cuenta_efectivo ?? null,
     notaSemana: cuentaEsta?.nota ?? null,
     cuentaAnterior: cuentaAnterior?.cuenta_efectivo ?? null,

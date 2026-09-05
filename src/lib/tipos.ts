@@ -29,6 +29,8 @@ export type Movimiento = {
   concepto: string;
   monto: number;
   medio: Medio;
+  /** True si es plata sacada de la caja de días anteriores, no plata nueva. */
+  de_caja: boolean;
   nota: string | null;
 };
 
