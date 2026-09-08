@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   resumenDia,
@@ -24,6 +25,7 @@ import { Flechas } from "@/components/nav";
 import { RegistroRapido } from "@/components/registro-rapido";
 import type { Movimiento } from "@/lib/tipos";
 import { guardarVenta, alternarCerrado, borrarMovimiento } from "../../actions";
+import { FormAccion } from "@/components/form-accion";
 
 export const dynamic = "force-dynamic";
 
@@ -65,12 +67,20 @@ export default async function DiaCaja({
       </div>
 
       {/* El saldo de la caja es plata de la semana: solo lo ve el admin. */}
-      {admin && (
-        <p className="flex items-baseline justify-between gap-3 rounded-xl bg-superficie px-4 py-2.5 text-sm ring-1 ring-borde">
-          <span className="text-tinta-suave">En la caja quedan</span>
-          <span className="tabular font-bold">{pesos(caja.saldo)}</span>
-        </p>
-      )}
+      {admin &&
+        (caja.sinBase ? (
+          <Link
+            href="/caja/semana"
+            className="block rounded-xl bg-crema-200 px-4 py-2.5 text-sm font-medium text-sobre-crema transition active:scale-[.99]"
+          >
+            Falta decir con cuánto arranca la semana →
+          </Link>
+        ) : (
+          <p className="flex items-baseline justify-between gap-3 rounded-xl bg-superficie px-4 py-2.5 text-sm ring-1 ring-borde">
+            <span className="text-tinta-suave">En la caja quedan</span>
+            <span className="tabular font-bold">{pesos(caja.saldo)}</span>
+          </p>
+        ))}
 
       {/* --- Lo primero: registrar ------------------------------- */}
       <Tarjeta titulo="Registrar">
@@ -97,7 +107,7 @@ export default async function DiaCaja({
 
       {/* --- El cierre del día ----------------------------------- */}
       <Tarjeta titulo="Cierre">
-        <form action={guardarVenta} className="space-y-3">
+        <FormAccion action={guardarVenta} className="space-y-3">
           <input type="hidden" name="fecha" value={fecha} />
           <div className="grid gap-3 sm:grid-cols-2">
             <Campo etiqueta="Venta en efectivo">
@@ -124,14 +134,14 @@ export default async function DiaCaja({
             />
           </Campo>
           <Boton type="submit">Guardar venta</Boton>
-        </form>
+        </FormAccion>
 
-        <form action={alternarCerrado} className="mt-3">
+        <FormAccion action={alternarCerrado} className="mt-3">
           <input type="hidden" name="fecha" value={fecha} />
           <Boton type="submit" variante="secundario">
             {resumen.cerrado ? "Reabrir el día" : "Marcar día cerrado"}
           </Boton>
-        </form>
+        </FormAccion>
       </Tarjeta>
 
       {/* --- Y de último, la cuenta ------------------------------ */}
@@ -153,6 +163,12 @@ export default async function DiaCaja({
           <FilaClara
             etiqueta="De eso, sacado de la caja"
             valor={pesos(resumen.retiros)}
+          />
+        )}
+        {resumen.metidos > 0 && (
+          <FilaClara
+            etiqueta="De las salidas, guardado en la caja"
+            valor={pesos(resumen.metidos)}
           />
         )}
       </Cifra>
@@ -217,7 +233,11 @@ function ListaMovimientos({
                 <div className="min-w-0">
                   <div className="truncate font-medium">{m.concepto}</div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
-                    {m.de_caja && <Insignia tono="marca">De la caja</Insignia>}
+                    {m.de_caja && (
+                      <Insignia tono="marca">
+                        {m.tipo === "ENTRADA" ? "De la caja" : "A la caja"}
+                      </Insignia>
+                    )}
                     {m.medio === "TRANSFERENCIA" && (
                       <Insignia>Transferencia</Insignia>
                     )}
@@ -232,7 +252,7 @@ function ListaMovimientos({
                   >
                     {pesos(m.monto)}
                   </span>
-                  <form action={borrarMovimiento}>
+                  <FormAccion action={borrarMovimiento}>
                     <input type="hidden" name="fecha" value={fecha} />
                     <input type="hidden" name="id" value={m.id} />
                     <Boton
@@ -243,7 +263,7 @@ function ListaMovimientos({
                     >
                       ✕
                     </Boton>
-                  </form>
+                  </FormAccion>
                 </div>
               </li>
             ))}

@@ -1,5 +1,6 @@
 import { ETIQUETA_FRANJA, porFranja, type TareaDelDia } from "@/lib/tareas";
 import { alternarTarea } from "@/app/tareas/actions";
+import { FormAccion } from "@/components/form-accion";
 
 export function Checklist({
   fecha,
@@ -28,7 +29,7 @@ export function Checklist({
           <ul className="space-y-2">
             {delGrupo.map((t) => (
               <li key={t.id}>
-                <form action={alternarTarea}>
+                <FormAccion action={alternarTarea}>
                   <input type="hidden" name="fecha" value={fecha} />
                   <input type="hidden" name="plantillaId" value={t.id} />
                   <button
@@ -63,7 +64,7 @@ export function Checklist({
                       )}
                     </span>
                   </button>
-                </form>
+                </FormAccion>
               </li>
             ))}
           </ul>

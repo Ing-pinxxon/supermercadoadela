@@ -8,9 +8,17 @@ import { leerMonto, leerTexto } from "@/lib/dinero";
 import { clave } from "@/lib/texto";
 import { esMedio, esTipoFiado, type Medio, type TipoFiado } from "@/lib/tipos";
 
-function refrescar(deudorId?: string) {
-  revalidatePath("/fiado");
-  if (deudorId) revalidatePath(`/fiado/${deudorId}`);
+/**
+ * Refresca lo que se ve después de guardar.
+ *
+ * Se revalida la app entera («/» como layout) y no rutas sueltas: con rutas
+ * sueltas, a veces la acción guardaba bien pero la pantalla seguía mostrando lo
+ * de antes — y en la tienda eso hace que uno vuelva a tocar el botón y
+ * desmarque lo que acababa de marcar. Todas las pantallas son `force-dynamic`,
+ * así que no hay caché que perder: refrescar de más no cuesta nada.
+ */
+function refrescar() {
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -44,7 +52,7 @@ export async function crearDeudor(datos: FormData) {
       [id, telefono],
     );
   }
-  refrescar(id);
+  refrescar();
   redirect(`/fiado/${id}`);
 }
 
@@ -114,9 +122,7 @@ export async function anotar(datos: FormData) {
     cliente.release();
   }
 
-  refrescar(deudorId);
-  revalidatePath(`/caja/dia/${fecha}`);
-  revalidatePath("/caja/semana");
+  refrescar();
 }
 
 /** Borra un movimiento de fiado y, si era un abono, su entrada de caja. */
@@ -141,10 +147,6 @@ export async function borrarFiado(datos: FormData) {
     }
     await cliente.query("COMMIT");
 
-    if (borrado) {
-      revalidatePath(`/caja/dia/${borrado.fecha}`);
-      revalidatePath("/caja/semana");
-    }
   } catch (e) {
     await cliente.query("ROLLBACK");
     throw e;
@@ -152,5 +154,5 @@ export async function borrarFiado(datos: FormData) {
     cliente.release();
   }
 
-  refrescar(deudorId);
+  refrescar();
 }

@@ -21,14 +21,20 @@ export async function alternarTarea(datos: FormData) {
     [nuevoId(), plantillaId, fecha],
   );
 
-  revalidatePath("/tareas");
-  revalidatePath("/tareas/semana");
+  refrescarTareas();
 }
 
+/**
+ * Refresca lo que se ve después de guardar.
+ *
+ * Se revalida la app entera («/» como layout) y no rutas sueltas: con rutas
+ * sueltas, a veces la acción guardaba bien pero la pantalla seguía mostrando lo
+ * de antes — y en la tienda eso hace que uno vuelva a tocar el botón y
+ * desmarque lo que acababa de marcar. Todas las pantallas son `force-dynamic`,
+ * así que no hay caché que perder: refrescar de más no cuesta nada.
+ */
 function refrescarTareas() {
-  revalidatePath("/tareas");
-  revalidatePath("/tareas/rutina");
-  revalidatePath("/tareas/semana");
+  revalidatePath("/", "layout");
 }
 
 /** Los días marcados en el formulario, sin repetidos y en orden. */

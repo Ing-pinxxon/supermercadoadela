@@ -8,6 +8,7 @@ import {
 import { Tarjeta, Campo, Texto, Seleccion, Vacio } from "@/components/ui";
 import { Boton } from "@/components/boton";
 import { crearTarea, editarTarea, alternarActiva } from "../actions";
+import { FormAccion } from "@/components/form-accion";
 
 export const dynamic = "force-dynamic";
 
@@ -102,7 +103,7 @@ function Tarea({ tarea }: { tarea: TareaRutina }) {
           </div>
         </div>
 
-        <form action={alternarActiva} className="shrink-0">
+        <FormAccion action={alternarActiva} className="shrink-0">
           <input type="hidden" name="grupoId" value={tarea.grupoId} />
           <Boton
             type="submit"
@@ -116,7 +117,7 @@ function Tarea({ tarea }: { tarea: TareaRutina }) {
           >
             {tarea.quitada ? "Volver a poner" : "Quitar"}
           </Boton>
-        </form>
+        </FormAccion>
       </div>
 
       {/* El formulario se abre aquí mismo, sin salir de la lista. */}
@@ -125,7 +126,7 @@ function Tarea({ tarea }: { tarea: TareaRutina }) {
           <span className="transition group-open:rotate-90">›</span>
           Editar
         </summary>
-        <form
+        <FormAccion
           action={editarTarea}
           className="mt-2 space-y-3 rounded-xl bg-superficie-2 p-3"
         >
@@ -136,7 +137,7 @@ function Tarea({ tarea }: { tarea: TareaRutina }) {
             El cambio aplica a todos los días de esta tarea. Si le quitas un
             día en el que ya se había marcado algo, ese historial se conserva.
           </p>
-        </form>
+        </FormAccion>
       </details>
     </li>
   );
@@ -158,10 +159,10 @@ export default async function Rutina() {
       </div>
 
       <Tarjeta titulo="Agregar tarea">
-        <form action={crearTarea} className="space-y-3">
+        <FormAccion action={crearTarea} className="space-y-3">
           <Campos />
           <Boton type="submit">Agregar a la rutina</Boton>
-        </form>
+        </FormAccion>
       </Tarjeta>
 
       {ORDEN_FRANJA.map((franja) => {

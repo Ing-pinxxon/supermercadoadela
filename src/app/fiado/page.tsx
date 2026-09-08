@@ -5,6 +5,7 @@ import { Tarjeta, Campo, Texto, Vacio, Cifra, Insignia } from "@/components/ui";
 import { Boton } from "@/components/boton";
 import { TarjetaEnlace } from "@/components/nav";
 import { crearDeudor } from "./actions";
+import { FormAccion } from "@/components/form-accion";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function Fiados() {
       />
 
       <Tarjeta titulo="Anotar a alguien nuevo">
-        <form action={crearDeudor} className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <FormAccion action={crearDeudor} className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <Campo etiqueta="Nombre">
             <Texto name="nombre" required placeholder="Doña Rosa" />
           </Campo>
@@ -37,7 +38,7 @@ export default async function Fiados() {
               Crear
             </Boton>
           </div>
-        </form>
+        </FormAccion>
       </Tarjeta>
 
       <Tarjeta titulo={`Deben (${deben.length})`}>

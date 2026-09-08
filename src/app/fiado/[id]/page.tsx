@@ -6,6 +6,7 @@ import { Tarjeta, Vacio, Cifra, Insignia, Volver } from "@/components/ui";
 import { Boton } from "@/components/boton";
 import { RegistroFiado } from "@/components/registro-fiado";
 import { borrarFiado } from "../actions";
+import { FormAccion } from "@/components/form-accion";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,7 @@ export default async function FichaDeudor({
                     {m.tipo === "FIADO" ? "+" : "−"}
                     {pesos(m.monto)}
                   </span>
-                  <form action={borrarFiado}>
+                  <FormAccion action={borrarFiado}>
                     <input type="hidden" name="id" value={m.id} />
                     <input type="hidden" name="deudorId" value={id} />
                     <Boton
@@ -103,7 +104,7 @@ export default async function FichaDeudor({
                     >
                       ✕
                     </Boton>
-                  </form>
+                  </FormAccion>
                 </div>
               </li>
             ))}

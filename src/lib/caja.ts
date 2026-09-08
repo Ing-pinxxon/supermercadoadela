@@ -13,6 +13,8 @@ export type ResumenDia = {
   entradas: number;
   /** De esas entradas, cuánta se sacó de la caja de días anteriores. */
   retiros: number;
+  /** De las salidas, cuánta fue plata guardada en la caja (no un gasto). */
+  metidos: number;
   ventaEfectivo: number;
   /** Venta que entró por Nequi o transferencia. Va aparte de la de efectivo. */
   ventaTransferencia: number;
@@ -40,6 +42,7 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
       salidas_transferencia: number;
       entradas: number;
       retiros: number;
+      metidos: number;
       cuantos: number;
     }>(
       `SELECT
@@ -50,6 +53,8 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
          COALESCE(SUM(monto) FILTER (WHERE tipo = 'ENTRADA'), 0)::int AS entradas,
          COALESCE(SUM(monto) FILTER (WHERE tipo = 'ENTRADA'
                                        AND de_caja), 0)::int AS retiros,
+         COALESCE(SUM(monto) FILTER (WHERE tipo = 'SALIDA'
+                                       AND de_caja), 0)::int AS metidos,
          COUNT(*)::int AS cuantos
        FROM movimiento WHERE fecha = $1`,
       [fecha],
@@ -68,6 +73,7 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
     salidasTransferencia: totales?.salidas_transferencia ?? 0,
     entradas,
     retiros: totales?.retiros ?? 0,
+    metidos: totales?.metidos ?? 0,
     ventaEfectivo,
     ventaTransferencia,
     ingresoBruto,
@@ -83,56 +89,59 @@ export async function resumenDia(fecha: string): Promise<ResumenDia> {
  * red de seguridad: si se olvidan de marcarlo, la cuenta igual cuadra al día
  * siguiente. `$3` es la fecha de hoy.
  */
+/**
+ * Un día «terminó» si ya lo marcaron cerrado o si ya pasó. Lo segundo es la
+ * red de seguridad: si se olvidan de marcarlo, la cuenta igual cuadra al día
+ * siguiente. `$3` es la fecha de hoy.
+ */
 const TERMINADO = `(COALESCE(c.cerrado, FALSE) OR c.fecha < $3)`;
 
 export type CajaSemana = {
   /** Con cuánto arrancó la semana. Lo escribe el administrador. */
   base: number;
-  /** Lo que dejaron los días que ya terminaron. Puede ser negativo. */
-  entrado: number;
-  /** Lo que se sacó en los días que aún no terminan. */
+  /** La venta en efectivo de los días que ya terminaron. */
+  venta: number;
+  /** Lo que se guardó en la caja. */
+  metido: number;
+  /** Lo que se sacó de la caja. */
   sacado: number;
   saldo: number;
   /** True si nadie ha puesto la base de esta semana todavía. */
   sinBase: boolean;
+  /** Con cuánto cerró la semana anterior, para no tener que ir a buscarlo. */
+  sugerida: number | null;
 };
 
 /**
- * La plata que queda de días anteriores.
+ * La plata guardada de la semana.
  *
- *   caja = base + lo que dejó cada día ya terminado − lo que se sacó hoy
+ *   caja = con cuánto arrancó
+ *        + la venta en efectivo de los días que ya terminaron
+ *        + lo que se metió a la caja
+ *        − lo que se sacó de la caja
  *
- * «Lo que dejó un día» es `venta efectivo + entradas − salidas`, pero sin
- * contar los retiros: esa plata ya estaba en la caja, sumarla sería contarla
- * dos veces. Y un día cuenta como terminado si está marcado como cerrado o si
- * ya pasó — así el saldo se actualiza al cerrar, y si se olvidan de marcarlo,
- * igual cuadra al día siguiente.
+ * Las salidas, las entradas y las transferencias NO la tocan. Al cerrar el día
+ * se anota en «venta en efectivo» lo que quedó contado en el cajón, y esa plata
+ * ya tiene los pagos descontados: restarlos otra vez sería contarlos dos veces.
+ *
+ * Meter y sacar cuentan de una, sin esperar a que el día termine: es plata que
+ * se movió en el momento.
  */
-export async function cajaSemana(fecha: string): Promise<CajaSemana> {
-  const lunes = lunesDe(fecha);
+async function calcularCaja(lunes: string): Promise<Omit<CajaSemana, "sugerida">> {
   const domingo = sumarDias(lunes, 6);
 
-  const [semana, movidas, ventas] = await Promise.all([
+  const [semana, caja, ventas] = await Promise.all([
     consultarUna<{ caja_inicial: number | null }>(
       `SELECT caja_inicial FROM semana WHERE lunes = $1`,
       [lunes],
     ),
-    consultarUna<{ entrado: number; sacado: number }>(
+    consultarUna<{ metido: number; sacado: number }>(
       `SELECT
-         COALESCE(SUM(
-           CASE WHEN m.tipo = 'SALIDA' THEN -m.monto
-                -- El retiro no suma: esa plata ya estaba en la caja.
-                WHEN m.de_caja THEN 0
-                ELSE m.monto END
-         ) FILTER (WHERE (COALESCE(c.cerrado, FALSE) OR m.fecha < $3)), 0)::int AS entrado,
-         COALESCE(SUM(m.monto)
-           FILTER (WHERE m.de_caja
-                       AND NOT (COALESCE(c.cerrado, FALSE) OR m.fecha < $3)),
-           0)::int AS sacado
-       FROM movimiento m
-       LEFT JOIN cierre_dia c ON c.fecha = m.fecha
-      WHERE m.fecha BETWEEN $1 AND $2`,
-      [lunes, domingo, hoy()],
+         COALESCE(SUM(monto) FILTER (WHERE tipo = 'SALIDA'), 0)::int  AS metido,
+         COALESCE(SUM(monto) FILTER (WHERE tipo = 'ENTRADA'), 0)::int AS sacado
+       FROM movimiento
+      WHERE de_caja AND fecha BETWEEN $1 AND $2`,
+      [lunes, domingo],
     ),
     consultarUna<{ venta: number }>(
       `SELECT COALESCE(SUM(venta_efectivo), 0)::int AS venta
@@ -143,15 +152,33 @@ export async function cajaSemana(fecha: string): Promise<CajaSemana> {
   ]);
 
   const base = semana?.caja_inicial ?? 0;
-  const entrado = (movidas?.entrado ?? 0) + (ventas?.venta ?? 0);
-  const sacado = movidas?.sacado ?? 0;
+  const venta = ventas?.venta ?? 0;
+  const metido = caja?.metido ?? 0;
+  const sacado = caja?.sacado ?? 0;
 
   return {
     base,
-    entrado,
+    venta,
+    metido,
     sacado,
-    saldo: base + entrado - sacado,
+    saldo: base + venta + metido - sacado,
     sinBase: (semana?.caja_inicial ?? null) === null,
+  };
+}
+
+/** La caja de la semana de `fecha`, con el cierre de la anterior de referencia. */
+export async function cajaSemana(fecha: string): Promise<CajaSemana> {
+  const lunes = lunesDe(fecha);
+  const [propia, anterior] = await Promise.all([
+    calcularCaja(lunes),
+    calcularCaja(sumarDias(lunes, -7)),
+  ]);
+
+  return {
+    ...propia,
+    // Solo se sugiere un cierre de verdad: si la semana pasada tampoco tenía
+    // valor de arranque, su saldo no significa nada.
+    sugerida: anterior.sinBase ? null : anterior.saldo,
   };
 }
 
@@ -181,6 +208,7 @@ export async function resumenSemana(fecha: string) {
       salidasTransferencia: a.salidasTransferencia + d.salidasTransferencia,
       entradas: a.entradas + d.entradas,
       retiros: a.retiros + d.retiros,
+      metidos: a.metidos + d.metidos,
       ventaEfectivo: a.ventaEfectivo + d.ventaEfectivo,
       ventaTransferencia: a.ventaTransferencia + d.ventaTransferencia,
       ingresoBruto: a.ingresoBruto + d.ingresoBruto,
@@ -191,6 +219,7 @@ export async function resumenSemana(fecha: string) {
       salidasTransferencia: 0,
       entradas: 0,
       retiros: 0,
+      metidos: 0,
       ventaEfectivo: 0,
       ventaTransferencia: 0,
       ingresoBruto: 0,
@@ -269,7 +298,7 @@ export async function mayoresConceptos(desde: string, hasta: string, tope = 12) 
             SUM(monto)::int AS total,
             COUNT(*)::int   AS veces
        FROM movimiento
-      WHERE tipo = 'SALIDA' AND fecha BETWEEN $1 AND $2
+      WHERE tipo = 'SALIDA' AND NOT de_caja AND fecha BETWEEN $1 AND $2
       GROUP BY ${CLAVE_CONCEPTO}
       ORDER BY total DESC
       LIMIT $3`,

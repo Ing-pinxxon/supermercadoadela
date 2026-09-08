@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { anotar } from "@/app/fiado/actions";
 import { pesos } from "@/lib/dinero";
@@ -52,6 +53,7 @@ export function RegistroFiado({
   const [medio, setMedio] = useState<Medio>("EFECTIVO");
   const [aviso, setAviso] = useAviso();
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   return (
     <form
@@ -64,6 +66,7 @@ export function RegistroFiado({
 
         await anotar(datos);
 
+        router.refresh(); // sin esto la lista se queda mostrando lo de antes
         formRef.current?.reset();
         setMedio("EFECTIVO");
         if (monto > 0) {

@@ -13,10 +13,17 @@ function fechaDe(datos: FormData): string {
   return f;
 }
 
-function refrescar(fecha: string) {
-  revalidatePath(`/caja/dia/${fecha}`);
-  revalidatePath("/caja/semana");
-  revalidatePath("/caja/historico");
+/**
+ * Refresca lo que se ve después de guardar.
+ *
+ * Se revalida la app entera («/» como layout) y no rutas sueltas: con rutas
+ * sueltas, a veces la acción guardaba bien pero la pantalla seguía mostrando lo
+ * de antes — y en la tienda eso hace que uno vuelva a tocar el botón y
+ * desmarque lo que acababa de marcar. Todas las pantallas son `force-dynamic`,
+ * así que no hay caché que perder: refrescar de más no cuesta nada.
+ */
+function refrescar() {
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -49,14 +56,14 @@ export async function agregarMovimiento(datos: FormData) {
     ],
   );
 
-  refrescar(fecha);
+  refrescar();
 }
 
 export async function borrarMovimiento(datos: FormData) {
   const fecha = fechaDe(datos);
   const id = String(datos.get("id") ?? "");
   if (id) await consultar(`DELETE FROM movimiento WHERE id = $1`, [id]);
-  refrescar(fecha);
+  refrescar();
 }
 
 /** La venta del día (efectivo y transferencia aparte) y la observación. */
@@ -80,7 +87,7 @@ export async function guardarVenta(datos: FormData) {
     ],
   );
 
-  refrescar(fecha);
+  refrescar();
 }
 
 export async function alternarCerrado(datos: FormData) {
@@ -91,7 +98,7 @@ export async function alternarCerrado(datos: FormData) {
        cerrado = NOT cierre_dia.cerrado, actualizado_en = now()`,
     [fecha],
   );
-  refrescar(fecha);
+  refrescar();
 }
 
 /**
@@ -113,7 +120,27 @@ export async function sacarDeCaja(datos: FormData) {
     [nuevoId(), fecha, monto, leerTexto(datos.get("nota"))],
   );
 
-  refrescar(fecha);
+  refrescar();
+}
+
+/**
+ * Guardar plata en la caja. Es el espejo de sacar: se anota como una SALIDA
+ * marcada con `de_caja` porque la plata sale del cajón, pero no es un gasto —
+ * por eso no aparece en «en qué se fue la plata».
+ */
+export async function meterEnCaja(datos: FormData) {
+  const fecha = fechaDe(datos);
+  const monto = leerMonto(datos.get("monto"));
+  if (monto <= 0) return;
+
+  await consultar(
+    `INSERT INTO movimiento
+       (id, fecha, tipo, concepto, monto, medio, de_caja, nota)
+     VALUES ($1, $2, 'SALIDA', 'A la caja', $3, 'EFECTIVO', TRUE, $4)`,
+    [nuevoId(), fecha, monto, leerTexto(datos.get("nota"))],
+  );
+
+  refrescar();
 }
 
 /** Con cuánta plata arranca la semana. Es cosa del administrador. */
@@ -131,8 +158,7 @@ export async function guardarCajaInicial(datos: FormData) {
     [lunes, base],
   );
 
-  revalidatePath("/caja/semana");
-  revalidatePath(`/caja/dia/${fecha}`);
+  refrescar();
 }
 
 /** Conteo de efectivo al cerrar la semana. Es cosa del administrador. */
@@ -153,5 +179,5 @@ export async function guardarCuentaSemana(datos: FormData) {
     [lunes, cuenta, leerTexto(datos.get("notaSemana"))],
   );
 
-  revalidatePath("/caja/semana");
+  refrescar();
 }

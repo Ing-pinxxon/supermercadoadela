@@ -3,6 +3,7 @@ import { estadoBase, TABLAS } from "@/lib/instalacion";
 import { Tarjeta, Vacio, Volver } from "@/components/ui";
 import { Boton } from "@/components/boton";
 import { prepararBase, importarHistorico } from "./actions";
+import { FormAccion } from "@/components/form-accion";
 
 export const dynamic = "force-dynamic";
 
@@ -109,7 +110,7 @@ export default async function Instalar() {
               {e.tareasRutina === 0 &&
                 "Sin la rutina, la pantalla de tareas se ve vacía."}
             </Punto>
-            <form action={prepararBase} className="mt-3">
+            <FormAccion action={prepararBase} className="mt-3">
               <Boton type="submit" variante={todoListo ? "secundario" : "principal"}>
                 {todoListo
                   ? "Volver a revisar"
@@ -117,7 +118,7 @@ export default async function Instalar() {
                     ? "Actualizar la base"
                     : "Crear tablas y rutina"}
               </Boton>
-            </form>
+            </FormAccion>
           </Tarjeta>
 
           <Tarjeta titulo="Archivo histórico">
@@ -129,7 +130,7 @@ export default async function Instalar() {
                 ? "Es opcional: son las 26 semanas de la hoja vieja, para /caja/histórico."
                 : "Cargar de nuevo reemplaza el archivo; no toca lo que registres en la app."}
             </Punto>
-            <form action={importarHistorico} className="mt-3">
+            <FormAccion action={importarHistorico} className="mt-3">
               <Boton
                 type="submit"
                 variante="secundario"
@@ -142,7 +143,7 @@ export default async function Instalar() {
               >
                 {e.diasHistorico > 0 ? "Volver a cargar" : "Cargar histórico"}
               </Boton>
-            </form>
+            </FormAccion>
           </Tarjeta>
 
           <Tarjeta titulo="Lo registrado en la app">

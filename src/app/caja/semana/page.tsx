@@ -23,6 +23,7 @@ import {
 import { Boton } from "@/components/boton";
 import { Flechas } from "@/components/nav";
 import { guardarCuentaSemana, guardarCajaInicial } from "../actions";
+import { FormAccion } from "@/components/form-accion";
 
 export const dynamic = "force-dynamic";
 
@@ -191,37 +192,58 @@ export default async function SemanaCaja({
       </Tarjeta>
 
       <Tarjeta titulo="Caja de la semana">
-        <form action={guardarCajaInicial} className="space-y-3">
+        {r.caja.sinBase && (
+          <p className="mb-3 rounded-xl bg-crema-200 px-3 py-2 text-sm font-medium text-sobre-crema">
+            Falta decir con cuánto arranca la semana. Hasta que lo pongas no se
+            muestra ningún saldo.
+          </p>
+        )}
+
+        <FormAccion action={guardarCajaInicial} className="space-y-3">
           <input type="hidden" name="fecha" value={lunes} />
           <Campo
             etiqueta="Con cuánto arrancó la semana"
-            ayuda="La plata que había guardada el lunes, antes de vender nada."
+            ayuda={
+              r.caja.sugerida !== null
+                ? `La semana pasada cerró en ${pesos(r.caja.sugerida)}.`
+                : "La plata que había guardada el lunes, antes de vender nada."
+            }
           >
-            <Monto name="cajaInicial" defaultValue={r.caja.base || ""} />
+            <Monto
+              name="cajaInicial"
+              defaultValue={r.caja.base || r.caja.sugerida || ""}
+            />
           </Campo>
           <Boton type="submit">Guardar</Boton>
-        </form>
+        </FormAccion>
 
-        <div className="mt-3 border-t border-dashed border-borde pt-2">
-          <Fila etiqueta="Arrancó con" valor={r.caja.base} tono="suave" />
-          <Fila etiqueta="Dejaron los días cerrados" valor={r.caja.entrado} />
-          {/* Sin retiros el monto es cero: en negativo saldría «−$ 0». */}
-          <Fila
-            etiqueta="Sacado para pagar hoy"
-            valor={r.caja.sacado === 0 ? 0 : -r.caja.sacado}
-          />
-          <Fila etiqueta="Queda en la caja" valor={r.caja.saldo} fuerte />
-        </div>
+        {!r.caja.sinBase && (
+          <>
+            <div className="mt-3 border-t border-dashed border-borde pt-2">
+              <Fila etiqueta="Arrancó con" valor={r.caja.base} tono="suave" />
+              <Fila
+                etiqueta="Venta de los días cerrados"
+                valor={r.caja.venta}
+              />
+              <Fila etiqueta="Metido a la caja" valor={r.caja.metido} />
+              <Fila
+                etiqueta="Sacado de la caja"
+                valor={r.caja.sacado === 0 ? 0 : -r.caja.sacado}
+              />
+              <Fila etiqueta="Queda en la caja" valor={r.caja.saldo} fuerte />
+            </div>
 
-        <p className="mt-2 text-xs text-tinta-suave">
-          {r.caja.sinBase
-            ? "Todavía no has puesto con cuánto arrancó la semana, así que la caja cuenta desde cero."
-            : "El día en curso entra a la caja cuando lo cierres o cuando pase."}
-        </p>
+            <p className="mt-2 text-xs text-tinta-suave">
+              La venta del día entra a la caja cuando lo cierres o cuando pase.
+              Los pagos no le restan: la venta que anotas al cerrar ya los tiene
+              descontados.
+            </p>
+          </>
+        )}
       </Tarjeta>
 
       <Tarjeta titulo="Cuenta de efectivo">
-        <form action={guardarCuentaSemana} className="space-y-3">
+        <FormAccion action={guardarCuentaSemana} className="space-y-3">
           <input type="hidden" name="fecha" value={lunes} />
           <div className="grid gap-3 sm:grid-cols-2">
             <Campo
@@ -252,7 +274,7 @@ export default async function SemanaCaja({
             </p>
           )}
           <Boton type="submit">Guardar</Boton>
-        </form>
+        </FormAccion>
       </Tarjeta>
     </div>
   );

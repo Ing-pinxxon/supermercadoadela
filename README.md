@@ -32,18 +32,24 @@ ingreso bruto del día = venta en efectivo + salidas − entradas
 Toda la aritmética vive en `src/lib/caja.ts`. Ninguna pantalla calcula plata por
 su cuenta.
 
-**La caja de la semana** es la plata que queda de días anteriores:
+**La caja de la semana** es la plata guardada:
 
 ```
 caja = con cuánto arrancó la semana
-     + lo que dejó cada día que ya terminó   (venta efectivo + entradas − salidas)
-     − lo que se sacó en el día en curso
+     + la venta en efectivo de los días que ya terminaron
+     + lo que se metió a la caja
+     − lo que se sacó de la caja
 ```
 
-Los retiros no cuentan como «entrada» en esa suma: esa plata ya estaba en la
-caja, sumarla sería contarla dos veces. Un día cuenta como terminado cuando se
-marca cerrado o cuando ya pasó. El saldo lo ve solo el administrador; el botón
-para sacar lo usa cualquiera.
+**Los pagos no le restan.** Al cerrar el día se anota en «venta en efectivo» lo
+que quedó contado en el cajón, y esa plata ya tiene los pagos descontados:
+restarlos otra vez los contaría dos veces. Un día cuenta como terminado cuando
+se marca cerrado o cuando ya pasó.
+
+Cada lunes hay que decir con cuánto arranca la semana. Mientras no se diga, la
+app **no muestra ningún saldo** — avisa que falta, y ofrece el cierre de la
+semana anterior. El saldo lo ve solo el administrador; los botones de meter y
+sacar los usa cualquiera.
 
 Tres cosas que conviene tener claras, porque deciden dónde entra cada peso:
 
@@ -57,6 +63,12 @@ Tres cosas que conviene tener claras, porque deciden dónde entra cada peso:
 - **Sacar de la caja no es un gasto.** Es decir de dónde salió la plata: para
   el día cuenta como una entrada (por eso esos pesos no cuentan como venta de
   hoy) y para la caja es lo que la baja. El pago se registra aparte.
+- **Después de guardar hay que refrescar la pantalla a mano, desde el código.**
+  Con un `<form action={…}>` normal, la acción guardaba bien pero la vista se
+  quedaba mostrando lo de antes — y en la tienda eso lleva a tocar dos veces y
+  desmarcar lo que se acababa de marcar. Por eso los formularios que guardan
+  usan `src/components/form-accion.tsx` (o llaman `router.refresh()`), y no
+  `<form>` pelado.
 - **Fiar no mueve la caja; abonar sí.** Cuando alguien se lleva algo fiado solo
   nace la deuda. Cuando abona, esa plata entra al cajón sin ser venta del día,
   así que se registra como una entrada — el mismo papel que «Prestados ayer».

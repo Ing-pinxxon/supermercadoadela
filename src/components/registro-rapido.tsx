@@ -1,8 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
-import { agregarMovimiento, sacarDeCaja } from "@/app/caja/actions";
+import {
+  agregarMovimiento,
+  sacarDeCaja,
+  meterEnCaja,
+} from "@/app/caja/actions";
 import { pesos } from "@/lib/dinero";
 import { Aviso, useAviso } from "@/components/aviso";
 import type { Medio } from "@/lib/tipos";
@@ -40,19 +45,33 @@ function Botones() {
  * el concepto siempre sería el mismo. Por eso lleva `formNoValidate`: el campo
  * de concepto es obligatorio para los otros dos botones, no para este.
  */
-function BotonCaja() {
+function BotonesCaja() {
   const { pending } = useFormStatus();
+  const base =
+    "min-h-11 flex-1 rounded-full px-3 text-sm font-semibold text-tinta ring-1 ring-crema-200/40 transition active:scale-[.97] hover:bg-crema-200/10 disabled:opacity-50";
   return (
-    <button
-      type="submit"
-      name="accion"
-      value="CAJA"
-      formNoValidate
-      disabled={pending}
-      className="min-h-11 w-full rounded-full px-4 text-sm font-semibold text-tinta ring-1 ring-crema-200/40 transition active:scale-[.97] hover:bg-crema-200/10 disabled:opacity-50"
-    >
-      Saqué de la caja de días anteriores
-    </button>
+    <div className="flex gap-2">
+      <button
+        type="submit"
+        name="accion"
+        value="SACAR"
+        formNoValidate
+        disabled={pending}
+        className={base}
+      >
+        Saqué de la caja
+      </button>
+      <button
+        type="submit"
+        name="accion"
+        value="METER"
+        formNoValidate
+        disabled={pending}
+        className={base}
+      >
+        Metí a la caja
+      </button>
+    </div>
   );
 }
 
@@ -78,6 +97,7 @@ export function RegistroRapido({
   const [aviso, setAviso] = useAviso();
   const montoRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   return (
     <form
@@ -87,20 +107,27 @@ export function RegistroRapido({
           concepto: String(datos.get("concepto") ?? ""),
           monto: Number(String(datos.get("monto") ?? "").replace(/[^\d-]/g, "")),
           entrada: String(datos.get("tipo") ?? "") === "ENTRADA",
-          deCaja: String(datos.get("accion") ?? "") === "CAJA",
+          caja: String(datos.get("accion") ?? ""),
         };
 
-        if (guardado.deCaja) {
+        if (guardado.caja === "SACAR") {
           await sacarDeCaja(datos);
+        } else if (guardado.caja === "METER") {
+          await meterEnCaja(datos);
         } else {
           await agregarMovimiento(datos);
         }
 
+        router.refresh(); // sin esto la lista se queda mostrando lo de antes
         setConcepto("");
         setMedio("EFECTIVO");
         formRef.current?.reset();
-        if (guardado.deCaja && guardado.monto > 0) {
-          setAviso(`Sacaste ${pesos(guardado.monto)} de la caja`);
+        if (guardado.caja && guardado.monto > 0) {
+          setAviso(
+            guardado.caja === "SACAR"
+              ? `Sacaste ${pesos(guardado.monto)} de la caja`
+              : `Guardaste ${pesos(guardado.monto)} en la caja`,
+          );
         } else if (guardado.concepto && guardado.monto) {
           setAviso(
             `${guardado.entrada ? "Entró" : "Pagado"} ${pesos(
@@ -169,7 +196,7 @@ export function RegistroRapido({
       )}
 
       <Botones />
-      <BotonCaja />
+      <BotonesCaja />
       <Aviso texto={aviso} />
 
       <p className="text-xs text-tinta-suave">
@@ -178,9 +205,9 @@ export function RegistroRapido({
         aportes. Para una devolución, escribe el monto en negativo.
       </p>
       <p className="text-xs text-tinta-suave">
-        «Saqué de la caja» es para pagar con plata de días anteriores: escribe
-        solo el monto. Esa plata no cuenta como venta de hoy y se descuenta de
-        la caja; el pago se registra aparte con «Pagué».
+        La caja es la plata guardada: escribe solo el monto. «Saqué» es para
+        pagar con plata de días anteriores —no cuenta como venta de hoy y el
+        pago se registra aparte con «Pagué»—; «Metí» es guardar plata del cajón.
       </p>
     </form>
   );
