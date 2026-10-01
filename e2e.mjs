@@ -39,8 +39,10 @@ const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
 const errores = [];
 page.on("pageerror", (e) => errores.push(String(e)));
 
-const DIA = "2026-09-16"; // miércoles
-const OTRO = "2026-09-23"; // el miércoles siguiente
+// Días futuros a propósito: la caja de la semana solo suma la venta de los días
+// ya terminados, y la prueba cuenta con que este todavía no lo esté.
+const DIA = "2030-09-18"; // miércoles
+const OTRO = "2030-09-25"; // el miércoles siguiente
 
 // --- Deja la base como estaba antes de la última corrida ---------------
 const cadena = process.env.DATABASE_URL;
@@ -56,9 +58,9 @@ const pool = new Pool({
 await pool.query(`DELETE FROM movimiento WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
 await pool.query(`DELETE FROM cierre_dia WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
 await pool.query(`DELETE FROM tarea_hecha WHERE fecha = ANY($1)`, [[DIA, OTRO]]);
-await pool.query(`DELETE FROM semana WHERE lunes IN ('2026-09-14','2026-09-07')`);
+await pool.query(`DELETE FROM semana WHERE lunes IN ('2030-09-16','2030-09-09')`);
 await pool.query(`DELETE FROM deudor WHERE clave LIKE 'e2e%'`);
-await pool.query(`DELETE FROM semana WHERE lunes IN ('2026-09-14','2026-09-07')`);
+await pool.query(`DELETE FROM semana WHERE lunes IN ('2030-09-16','2030-09-09')`);
 // La prueba 8 renombra una tarea de la rutina; se le devuelve su nombre.
 await pool.query(
   `UPDATE tarea_plantilla SET titulo = 'Abrir y contar base de caja'
@@ -233,6 +235,40 @@ texto = await page.textContent("body");
 revisar("el archivo está cargado", texto.includes("ingreso bruto acumulado"));
 revisar("dibuja la gráfica semanal", (await page.locator("svg path").count()) > 0);
 revisar("compara por día de la semana", texto.includes("Qué día vendía más"));
+revisar("el archivo va aparte de lo nuevo", !texto.includes("Contra lo que va ahora"));
+
+// 6a. Tablero: lo registrado en la app, con sus gráficas
+await page.goto(`${BASE}/caja/tablero`, { waitUntil: "networkidle" });
+texto = await page.textContent("body");
+revisar(
+  "el tablero tiene las tres gráficas",
+  ["Ingreso y venta por semana", "En qué se va la plata", "Qué día se vende más"]
+    .every((t) => texto.includes(t)),
+);
+revisar("y dibuja", (await page.locator("svg").count()) > 0);
+revisar("con la comparación contra la hoja", texto.includes("Ver el archivo"));
+
+// Con la clave de la tienda, el tablero pide la de administrador.
+if (process.env.APP_PIN && process.env.APP_PIN_ADMIN) {
+  const tienda = await browser.newPage({ viewport: { width: 420, height: 900 } });
+  await tienda.goto(`${BASE}/entrar`, { waitUntil: "networkidle" });
+  await tienda.waitForFunction(() =>
+    Object.keys(document.querySelector("button") ?? {}).some((k) => k.startsWith("__react")),
+  );
+  await tienda.fill('input[name="pin"]', process.env.APP_PIN);
+  await Promise.all([
+    tienda.waitForURL((u) => !u.pathname.startsWith("/entrar"), { timeout: 15000 }),
+    tienda.click('button:has-text("Entrar")'),
+  ]);
+  await tienda.goto(`${BASE}/caja/tablero`, { waitUntil: "networkidle" });
+  const url = new URL(tienda.url());
+  revisar(
+    "con la clave de la tienda, el tablero pide la de administrador",
+    url.pathname === "/entrar" && url.searchParams.get("admin") === "1",
+    url.href,
+  );
+  await tienda.close();
+}
 
 // 6b. Fiados: fiar no mueve la caja, abonar sí
 await page.goto(`${BASE}/fiado`, { waitUntil: "networkidle" });

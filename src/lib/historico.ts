@@ -2,8 +2,9 @@ import { consultar, consultarUna } from "@/lib/db";
 import { CLAVE_CONCEPTO } from "@/lib/caja";
 
 /**
- * El archivo: las semanas que venían de la hoja de cálculo. Es de solo lectura;
- * sirve para comparar contra lo que se registre desde ahora.
+ * El archivo: las semanas que venían de la hoja de cálculo (sept 2023 – mar
+ * 2024). Es de solo lectura y vive aparte de lo que se registra en la app; lo
+ * de la app está en src/lib/tablero.ts.
  */
 
 export type SemanaHistorica = {
@@ -76,33 +77,6 @@ export async function conceptosArchivo(tope = 12) {
       ORDER BY total DESC
       LIMIT $1`,
     [tope],
-  );
-}
-
-/** Lo registrado en la app (no el archivo), semana por semana. */
-export async function semanasActuales(): Promise<SemanaHistorica[]> {
-  return consultar<SemanaHistorica>(
-    `WITH dia AS (
-       SELECT c.fecha,
-              c.venta_efectivo,
-              COALESCE(m.salidas, 0)  AS salidas,
-              COALESCE(m.entradas, 0) AS entradas
-         FROM cierre_dia c
-         LEFT JOIN (
-           SELECT fecha,
-                  SUM(monto) FILTER (WHERE tipo = 'SALIDA')  AS salidas,
-                  SUM(monto) FILTER (WHERE tipo = 'ENTRADA') AS entradas
-             FROM movimiento GROUP BY fecha
-         ) m ON m.fecha = c.fecha
-     )
-     SELECT (date_trunc('week', fecha))::date::text AS lunes,
-            SUM(venta_efectivo + salidas - entradas)::int AS ingreso_bruto,
-            SUM(venta_efectivo)::int AS venta_efectivo,
-            SUM(salidas)::int        AS total_salidas,
-            COUNT(*)::int            AS dias
-       FROM dia
-      GROUP BY 1
-      ORDER BY 1`,
   );
 }
 

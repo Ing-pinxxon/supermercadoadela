@@ -46,7 +46,8 @@ export async function Encabezado({ seccion }: { seccion: "caja" | "tareas" }) {
               {admin && (
                 <>
                   <EnlaceNav href="/caja/semana">Semana</EnlaceNav>
-                  <EnlaceNav href="/caja/historico">Histórico</EnlaceNav>
+                  <EnlaceNav href="/caja/tablero">Tablero</EnlaceNav>
+                  <EnlaceNav href="/caja/historico">Archivo</EnlaceNav>
                 </>
               )}
             </>

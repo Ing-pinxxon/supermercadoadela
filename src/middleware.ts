@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE, puedeEntrar, rolDe, rutaParaPedirAdmin } from "@/lib/sesion";
 
 /** Lo que solo ve el administrador: la plata de la semana y el histórico. */
-const SOLO_ADMIN = ["/caja/semana", "/caja/historico", "/instalar"];
+const SOLO_ADMIN = [
+  "/caja/semana",
+  "/caja/tablero",
+  "/caja/historico",
+  "/instalar",
+];
 
 /**
  * Puerta de entrada: si hay APP_PIN configurado, nadie ve la app sin clave, y

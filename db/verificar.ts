@@ -14,8 +14,8 @@ import {
   mayoresConceptos,
 } from "../src/lib/caja";
 import { tareasDelDia, avanceSemana, rutina } from "../src/lib/tareas";
+import { inicioApp, semanasApp, porDiaSemanaApp } from "../src/lib/tablero";
 import {
-  semanasActuales,
   compararPromedios,
   semanasArchivo,
 } from "../src/lib/historico";
@@ -152,7 +152,7 @@ async function main() {
   );
 
   // --- Comparación con el archivo --------------------------------
-  const [arch, act] = await Promise.all([semanasArchivo(), semanasActuales()]);
+  const [arch, act] = await Promise.all([semanasArchivo(), semanasApp()]);
   const comp = compararPromedios(arch, act);
   revisar("el archivo tiene semanas", arch.length > 0, true);
   revisar(
@@ -160,6 +160,53 @@ async function main() {
     comp.semanasActuales,
     0,
   );
+
+  // --- El tablero: lo de la app, aparte del archivo --------------
+  const inicio = await inicioApp();
+  revisar(
+    "el tablero sabe desde cuándo se usa la app",
+    inicio !== null && inicio <= FECHA,
+    true,
+  );
+
+  // La transferencia se ve en el tablero pero no mueve el ingreso bruto.
+  await consultar(
+    `UPDATE cierre_dia SET venta_transferencia = 50000 WHERE fecha = $1`,
+    [FECHA],
+  );
+  const semanaTablero = async () =>
+    (await semanasApp()).find((s) => s.lunes === lunesDe(FECHA));
+  const tab = await semanaTablero();
+  revisar(
+    "el tablero da el mismo ingreso que la semana de caja",
+    tab?.ingreso_bruto,
+    (await resumenSemana(FECHA)).totales.ingresoBruto,
+  );
+  revisar("el tablero cuenta un día", tab?.dias, 1);
+  revisar("la venta por transferencia va aparte", tab?.venta_transferencia, 50000);
+
+  // Un día con pagos y la venta sin anotar no cambia el promedio por día:
+  // daría un ingreso negativo que no dice nada de cuánto se vendió.
+  const porDiaAntes = await porDiaSemanaApp();
+  await consultar(
+    `INSERT INTO movimiento (id, fecha, tipo, concepto, monto)
+     VALUES ($1, $2, 'SALIDA', 'Pedidos', 400000)`,
+    [nuevoId(), sumarDias(FECHA, 1)],
+  );
+  revisar(
+    "un día sin venta no entra al promedio por día",
+    await porDiaSemanaApp(),
+    porDiaAntes,
+  );
+  revisar(
+    "pero su gasto sí cuenta en la semana",
+    (await semanaTablero())?.total_salidas,
+    930000,
+  );
+  // Fuera, para que las cuentas de la semana que siguen no lo arrastren.
+  await consultar(`DELETE FROM movimiento WHERE fecha = $1`, [
+    sumarDias(FECHA, 1),
+  ]);
 
   // --- Tareas ----------------------------------------------------
   const tareas = await tareasDelDia(FECHA);

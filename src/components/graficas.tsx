@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { pesos } from "@/lib/dinero";
 
 /**
@@ -11,17 +11,54 @@ import { pesos } from "@/lib/dinero";
 // el verde profundo se leen mejor que los tonos oscuros del tema anterior.
 const SERIE_1 = "#8fbdff"; // azul
 const SERIE_2 = "#ffb072"; // naranja
+// Tercera serie: aqua. Validada con la skill dataviz contra la tarjeta verde
+// (#2c5a29), las tres juntas: croma, separación para daltonismo (ΔE 8,8),
+// visión normal (ΔE 16,8) y contraste ≥ 3:1. La «banda de luminosidad» de la
+// skill no aplica aquí: está calibrada para un fondo casi negro, y sobre este
+// verde las marcas tienen que ser más claras para leerse.
+const SERIE_3 = "#6fe0b5"; // aqua
 const SUPERFICIE = "#2c5a29"; // el color de la tarjeta (para el halo de los puntos)
 const REJILLA = "rgba(251, 241, 205, 0.18)";
 const TINTA_2 = "#f3dfa2";
 
-function ejeY(max: number) {
-  if (max <= 0) return [0];
-  const paso = Math.pow(10, Math.floor(Math.log10(max)));
-  const escalon = max / paso > 5 ? paso * 2 : max / paso > 2 ? paso : paso / 2;
+/**
+ * Las marcas del eje: arrancan en 0 (o por debajo, si alguna semana dio
+ * negativo) y la última siempre queda por encima del valor más alto, para que
+ * ninguna línea se salga por arriba.
+ */
+function ejeY(max: number, min = 0) {
+  const mayor = Math.max(max, -min);
+  if (mayor <= 0) return [0];
+  const paso = Math.pow(10, Math.floor(Math.log10(mayor)));
+  const escalon =
+    mayor / paso > 5 ? paso * 2 : mayor / paso > 2 ? paso : paso / 2;
   const marcas: number[] = [];
-  for (let v = 0; v <= max + escalon * 0.001; v += escalon) marcas.push(v);
+  const desde = min < 0 ? -Math.ceil(-min / escalon) * escalon : 0;
+  for (let v = desde; ; v += escalon) {
+    marcas.push(v);
+    if (v >= max - escalon * 0.001) break;
+  }
   return marcas;
+}
+
+/**
+ * El ancho real del contenedor, en píxeles. El lienzo se dibuja a ese ancho
+ * para que el texto quede del mismo tamaño en el celular y en el computador,
+ * en vez de encogerse con la gráfica.
+ */
+function useAncho(inicial: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [ancho, setAncho] = useState(inicial);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const medir = () => setAncho(Math.max(240, Math.round(el.clientWidth)));
+    medir();
+    const obs = new ResizeObserver(medir);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, ancho] as const;
 }
 
 function corto(monto: number) {
@@ -45,30 +82,36 @@ export function GraficaLineas({
   alto?: number;
 }) {
   const [activo, setActivo] = useState<number | null>(null);
+  const [caja, ancho] = useAncho(700);
 
   const n = series[0]?.puntos.length ?? 0;
   if (n === 0) return null;
 
-  const ancho = 700;
-  const izq = 52;
+  const izq = 44;
   const der = 12;
   const arriba = 12;
   const abajo = 28;
   const anchoUtil = ancho - izq - der;
   const altoUtil = alto - arriba - abajo;
 
-  const max = Math.max(
-    ...series.flatMap((s) => s.puntos.map((p) => p.valor)),
-    0,
-  );
-  const marcas = ejeY(max);
-  const tope = marcas[marcas.length - 1] || 1;
+  const valores = series.flatMap((s) => s.puntos.map((p) => p.valor));
+  const marcas = ejeY(Math.max(...valores, 0), Math.min(...valores, 0));
+  const base = marcas[0];
+  const tope = marcas[marcas.length - 1] > base ? marcas[marcas.length - 1] : base + 1;
 
   const x = (i: number) => izq + (n === 1 ? anchoUtil / 2 : (i / (n - 1)) * anchoUtil);
-  const y = (v: number) => arriba + altoUtil - (v / tope) * altoUtil;
+  const y = (v: number) =>
+    arriba + altoUtil - ((v - base) / (tope - base)) * altoUtil;
 
-  const colores = [SERIE_1, SERIE_2];
-  const saltoEtiqueta = Math.max(1, Math.ceil(n / 7));
+  const colores = [SERIE_1, SERIE_2, SERIE_3];
+  // Una etiqueta de fecha («Lun 14 sept») pide unos 80 px para no pisarse.
+  // Se reparten parejas y siempre van la primera y la última.
+  const caben = Math.min(n, Math.max(2, Math.floor(anchoUtil / 80)));
+  const conEtiqueta = new Set(
+    Array.from({ length: caben }, (_, k) =>
+      caben === 1 ? 0 : Math.round((k * (n - 1)) / (caben - 1)),
+    ),
+  );
 
   return (
     <div>
@@ -87,10 +130,10 @@ export function GraficaLineas({
         </div>
       )}
 
-      <div className="relative overflow-x-auto">
+      <div ref={caja} className="relative">
         <svg
           viewBox={`0 0 ${ancho} ${alto}`}
-          className="w-full min-w-[320px]"
+          className="block w-full"
           role="img"
           aria-label={`Gráfica de ${series.map((s) => s.nombre).join(" y ")}`}
           onMouseLeave={() => setActivo(null)}
@@ -118,7 +161,7 @@ export function GraficaLineas({
           ))}
 
           {series[0].puntos.map((p, i) =>
-            i % saltoEtiqueta === 0 ? (
+            conEtiqueta.has(i) ? (
               <text
                 key={p.etiqueta}
                 x={x(i)}
@@ -126,7 +169,7 @@ export function GraficaLineas({
                 // Las de los extremos se anclan hacia adentro para que no se
                 // salgan del lienzo.
                 textAnchor={
-                  i === 0 ? "start" : i > n - 1 - saltoEtiqueta ? "end" : "middle"
+                  n === 1 ? "middle" : i === 0 ? "start" : i === n - 1 ? "end" : "middle"
                 }
                 fontSize={11}
                 fill={TINTA_2}

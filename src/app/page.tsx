@@ -60,6 +60,23 @@ export default async function Inicio() {
       </div>
 
       {admin && (
+        <Link
+          href="/caja/tablero"
+          className="mt-3 flex items-center gap-4 rounded-2xl bg-superficie p-4 shadow-sm ring-1 ring-borde transition hover:ring-borde-fuerte active:scale-[.99]"
+        >
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-crema-200 text-xl shadow-md shadow-verde-950/30">
+            📊
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">Tablero</span>
+            <span className="mt-0.5 block text-sm text-tinta-suave">
+              Cómo va el negocio desde que empezaste a usar la app.
+            </span>
+          </span>
+        </Link>
+      )}
+
+      {admin && (
         <p className="mt-8 text-center text-xs text-tinta-tenue">
           <Link href="/instalar" className="hover:underline">
             Estado de la base de datos

@@ -1,6 +1,5 @@
 import {
   semanasArchivo,
-  semanasActuales,
   resumenArchivo,
   porDiaSemana,
   conceptosArchivo,
@@ -17,9 +16,8 @@ export const dynamic = "force-dynamic";
 export default async function Historico() {
   await exigirAdmin("/caja/historico");
 
-  const [archivo, actuales, resumen, porDia, conceptos] = await Promise.all([
+  const [archivo, resumen, porDia, conceptos] = await Promise.all([
     semanasArchivo(),
-    semanasActuales(),
     resumenArchivo(),
     porDiaSemana(),
     conceptosArchivo(12),
@@ -28,7 +26,7 @@ export default async function Historico() {
   if (!resumen || resumen.dias === 0) {
     return (
       <div className="space-y-5">
-        <h1 className="display text-2xl font-black">Histórico</h1>
+        <h1 className="display text-2xl font-black">Archivo de la hoja</h1>
         <Tarjeta>
           <Vacio>
             No hay archivo cargado. Se carga con el botón «Cargar histórico»
@@ -39,7 +37,8 @@ export default async function Historico() {
     );
   }
 
-  const comparacion = compararPromedios(archivo, actuales);
+  // Solo el archivo: lo de la app está en el tablero.
+  const comparacion = compararPromedios(archivo, []);
   const semanasCompletas = archivo.filter((s) => s.dias >= 5);
   const mejor = [...semanasCompletas].sort(
     (a, b) => b.ingreso_bruto - a.ingreso_bruto,
@@ -48,10 +47,15 @@ export default async function Historico() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="display text-2xl font-black">Histórico</h1>
+        <h1 className="display text-2xl font-black">Archivo de la hoja</h1>
         <p className="text-sm text-tinta-suave">
           Lo que traía la hoja de cálculo: {resumen.dias} días entre{" "}
-          {etiquetaCorta(resumen.desde)} y {etiquetaCorta(resumen.hasta)}.
+          {etiquetaCorta(resumen.desde)} y {etiquetaCorta(resumen.hasta)}. Es
+          de solo lectura; lo registrado en la app está en el{" "}
+          <a href="/caja/tablero" className="text-crema-200 underline-offset-2 hover:underline">
+            tablero
+          </a>
+          .
         </p>
       </div>
 
@@ -77,66 +81,6 @@ export default async function Historico() {
             La mejor semana fue la del {etiquetaCorta(mejor.lunes)} con{" "}
             {pesos(mejor.ingreso_bruto)}.
           </p>
-        )}
-      </Tarjeta>
-
-      {/* Comparación con lo que va del año */}
-      <Tarjeta titulo="Contra lo que va ahora">
-        {comparacion.actual === null ? (
-          <p className="text-sm text-tinta-suave">
-            Todavía no hay semanas completas registradas en la app. Cuando
-            registres cinco días o más de una semana, aquí aparece la
-            comparación contra el promedio de{" "}
-            {comparacion.archivo ? pesos(comparacion.archivo) : "el archivo"}.
-          </p>
-        ) : (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <div className="tabular text-2xl font-bold">
-                  {pesos(comparacion.actual)}
-                </div>
-                <p className="text-xs text-tinta-suave">
-                  promedio ahora ({comparacion.semanasActuales} semanas)
-                </p>
-              </div>
-              <div>
-                <div
-                  className={`tabular text-2xl font-bold ${
-                    (comparacion.variacion ?? 0) >= 0
-                      ? "text-crema-200"
-                      : "text-rojo"
-                  }`}
-                >
-                  {(comparacion.variacion ?? 0) >= 0 ? "+" : ""}
-                  {comparacion.variacion}%
-                </div>
-                <p className="text-xs text-tinta-suave">contra el archivo</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <GraficaLineas
-                series={[
-                  {
-                    nombre: "Archivo",
-                    puntos: semanasCompletas.map((s) => ({
-                      etiqueta: etiquetaCorta(s.lunes),
-                      valor: s.ingreso_bruto,
-                    })),
-                  },
-                  {
-                    nombre: "Ahora",
-                    puntos: actuales
-                      .filter((s) => s.dias >= 5)
-                      .map((s) => ({
-                        etiqueta: etiquetaCorta(s.lunes),
-                        valor: s.ingreso_bruto,
-                      })),
-                  },
-                ]}
-              />
-            </div>
-          </>
         )}
       </Tarjeta>
 

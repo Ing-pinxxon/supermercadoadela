@@ -3,8 +3,8 @@
 Tres herramientas en un mismo proyecto:
 
 - **Caja** (`/caja`) — reemplaza la hoja "TIENDA". Abre en el día de hoy:
-  registro rápido de pagos y entradas de plata, cierre del día, semana e
-  histórico.
+  registro rápido de pagos y entradas de plata, cierre del día, semana,
+  tablero con gráficas y el archivo de la hoja vieja.
 - **Fiados** (`/fiado`) — quién se llevó mercancía y todavía debe, con el saldo
   de cada persona y los abonos cuando pagan.
 - **Tareas del día** (`/tareas`) — la rutina de lunes a domingo. Es
@@ -145,10 +145,10 @@ Neon (`POSTGRES_URL`, `DATABASE_URL_UNPOOLED`, …); `/instalar` dice cuál tom�
 ## Las dos claves
 
 - `APP_PIN` — la de la tienda. Registra pagos, fía, recibe abonos y marca
-  tareas. **No ve** los totales de la semana ni el histórico: esas pantallas ni
-  siquiera le aparecen en el menú.
+  tareas. **No ve** los totales de la semana, el tablero ni el archivo: esas
+  pantallas ni siquiera le aparecen en el menú.
 - `APP_PIN_ADMIN` — la del administrador. Ve todo, incluidas la semana, el
-  histórico y `/instalar`.
+  tablero, el archivo y `/instalar`.
 
 Son claves compartidas del negocio, no cuentas por persona (cookie de un mes).
 La clave con la que se entra decide lo que se ve; arriba a la derecha dice si
@@ -193,12 +193,32 @@ caja del día solo. El nombre se agrupa igual que los proveedores: «Doña Rosa�
 entradas, venta e ingreso, más los totales. Abajo, en qué se fue la plata esa
 semana y el conteo de efectivo comparado con la semana anterior.
 
-## El histórico
+## El tablero
 
-`/caja/historico` muestra las 26 semanas que venían de la hoja (3 de septiembre
-de 2023 al 1 de marzo de 2024): ingreso por semana, qué día vendía más y en qué
-se iba la plata. Cuando registres semanas completas en la app, aparece la
-comparación contra ese promedio.
+`/caja/tablero` (menú **Tablero**, solo el administrador) muestra lo registrado
+en la app desde el primer día que se usó — ese inicio no se escribe a mano, es
+el primer día con algo anotado:
+
+- Cuatro cifras: ingreso bruto desde que empezaste, promedio por semana, gastos
+  y semanas registradas.
+- **Ingreso y venta por semana**: ingreso bruto, venta en efectivo y, si hay,
+  venta por transferencia.
+- **En qué se va la plata**: los diez conceptos con más pagos (lo guardado en la
+  caja no cuenta como gasto).
+- **Qué día se vende más**: promedio de ingreso bruto por día de la semana,
+  solo de días con la venta anotada.
+- Al pie, una línea que compara con la hoja vieja: «la hoja de 2023 promediaba
+  $X por semana; ahora vas en $Y». El promedio solo usa semanas de 5 días o más.
+
+Usa la misma fórmula del día que el resto de la caja; las consultas están en
+`src/lib/tablero.ts`.
+
+## El archivo de la hoja
+
+`/caja/historico` (menú **Archivo**) muestra las 26 semanas que venían de la
+hoja (3 de septiembre de 2023 al 1 de marzo de 2024): ingreso por semana, qué
+día vendía más y en qué se iba la plata. Va aparte de lo nuevo: lo registrado
+en la app está en el tablero.
 
 El archivo es **de solo lectura** y vive en sus propias tablas
 (`historico_dia`, `historico_detalle`), separado de lo que registres desde
@@ -243,7 +263,8 @@ src/lib/caja.ts      TODA la aritmética de caja vive aquí.
 src/lib/fiados.ts    Saldos y movimientos de los fiados.
                      (la caja de la semana está en caja.ts, con lo demás)
 src/lib/sesion.ts    Las dos claves y qué puede ver cada una.
-src/lib/historico.ts Consultas del archivo y la comparación con el año actual.
+src/lib/historico.ts Consultas del archivo de la hoja (solo lectura).
+src/lib/tablero.ts   Lo registrado en la app, para el tablero.
 src/lib/tareas.ts    Consultas del módulo de tareas.
 src/components/      UI, registro rápido, navegación y gráficas (SVG).
 ```
@@ -280,12 +301,13 @@ Cinco decisiones que conviene no romper:
 ## Pruebas
 
 ```bash
-npm run db:verificar   # aritmética de caja, tareas e histórico
+npm run db:verificar   # aritmética de caja, tareas, tablero y archivo
 npm run test:e2e       # formularios en un navegador (requiere npm start en :3100)
 ```
 
 **No las corras apuntando a la base del negocio**: `db:verificar` inserta y borra
-registros de la semana del 2 de septiembre de 2026.
+registros de la semana del 2 de septiembre de 2026 y de la semana en curso, y
+`test:e2e` usa días de septiembre de 2030.
 
 ## Qué falta / siguientes pasos
 
