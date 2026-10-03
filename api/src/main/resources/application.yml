@@ -1,0 +1,65 @@
+# Configuración de la API del catálogo.
+#
+# Todo lo que cambia entre tu computador y Render llega por variables de
+# entorno (las ${...}); lo de aquí son los valores por defecto para correrla en
+# local contra el Postgres de desarrollo.
+
+server:
+  port: ${PORT:8080}
+  # Render pone la API detrás de su proxy: así las URLs salen con https.
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: catalogo
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://127.0.0.1:5433/adela}
+    username: ${DATABASE_USER:postgres}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      # Neon gratis aguanta pocas conexiones y la API tiene poco tráfico.
+      maximum-pool-size: ${DB_POOL:4}
+      minimum-idle: 0
+      idle-timeout: 60000
+  jpa:
+    # El esquema lo manda Flyway. Hibernate solo comprueba que las entidades
+    # coincidan con las tablas; si no, la API no arranca (mejor que fallar a medias).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: catalogo
+        jdbc:
+          time_zone: UTC
+  flyway:
+    # Todo lo del catálogo vive en su propio esquema, aparte de las tablas de
+    # caja, fiados y tareas que maneja la app de Next. No se pisan.
+    schemas: catalogo
+    default-schema: catalogo
+    create-schemas: true
+
+catalogo:
+  # La clave que Next manda en X-Api-Key para poder escribir. Sin ella
+  # configurada, nadie puede escribir (se falla cerrado, no abierto).
+  api-key: ${CATALOGO_API_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    root: INFO

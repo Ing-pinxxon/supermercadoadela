@@ -1,0 +1,3 @@
+# La API en Java se despliega en Render, no en Vercel.
+api/
+render.yaml

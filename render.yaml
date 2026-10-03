@@ -1,0 +1,23 @@
+# Blueprint de Render para la API del catálogo (carpeta api/).
+# En Render: New → Blueprint → este repositorio. Render lee este archivo.
+services:
+  - type: web
+    name: adela-catalogo
+    runtime: docker
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: ohio
+    healthCheckPath: /actuator/health
+    # Solo se vuelve a desplegar cuando cambia algo de la API.
+    buildFilter:
+      paths:
+        - api/**
+    envVars:
+      # La misma cadena de Neon que usa la app de Next. Se pega tal cual: la API
+      # la convierte sola al formato de Java.
+      - key: DATABASE_URL
+        sync: false
+      # Una clave larga e inventada; la misma va en Vercel como CATALOGO_API_KEY.
+      - key: CATALOGO_API_KEY
+        generateValue: true
