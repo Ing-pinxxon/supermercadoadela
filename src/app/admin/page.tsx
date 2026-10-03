@@ -20,6 +20,13 @@ const ATAJOS = [
     color: "bg-crema-200",
   },
   {
+    href: "/admin/catalogo",
+    icono: "🏷️",
+    titulo: "Catálogo de la tienda",
+    texto: "Precios, stock, fotos y combos de la tienda en línea.",
+    color: "bg-crema-200",
+  },
+  {
     href: "/tareas",
     icono: "✅",
     titulo: "Tareas del día",
@@ -28,7 +35,9 @@ const ATAJOS = [
   },
 ];
 
-export default async function Inicio() {
+export const metadata = { title: "Administración" };
+
+export default async function InicioAdmin() {
   const fecha = hoy();
   const admin = await esAdmin();
 
@@ -76,13 +85,16 @@ export default async function Inicio() {
         </Link>
       )}
 
-      {admin && (
-        <p className="mt-8 text-center text-xs text-tinta-tenue">
+      <p className="mt-8 flex justify-center gap-4 text-center text-xs text-tinta-tenue">
+        <Link href="/" className="hover:underline">
+          Ver la tienda en línea →
+        </Link>
+        {admin && (
           <Link href="/instalar" className="hover:underline">
             Estado de la base de datos
           </Link>
-        </p>
-      )}
+        )}
+      </p>
     </main>
   );
 }

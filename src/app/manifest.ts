@@ -2,20 +2,21 @@ import type { MetadataRoute } from "next";
 
 /**
  * Para poder instalarla en el celular («Agregar a pantalla de inicio») y que
- * abra sin la barra del navegador. Arranca en /caja, que es el día de hoy.
+ * abra sin la barra del navegador. Arranca en la tienda; el equipo entra a la
+ * administración con el botón de arriba (y las instalaciones viejas siguen
+ * abriendo en /caja, que es lo que guardaron al instalar).
  *
- * No hay service worker: sin conexión la app no sirve de todos modos, porque
- * todo sale de la base.
+ * No hay service worker: sin conexión la app no sirve de todos modos.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Supermercado Adela",
     short_name: "Adela",
-    description: "Caja, fiados y rutina diaria del negocio.",
-    start_url: "/caja",
+    description: "Licores y mercado a domicilio en San Inés Sur, Bogotá. Pide por WhatsApp.",
+    start_url: "/",
     display: "standalone",
-    background_color: "#f6f7f9",
-    theme_color: "#15803d",
+    background_color: "#f3e9d6",
+    theme_color: "#c0392b",
     lang: "es-CO",
     icons: [
       { src: "/icon", sizes: "512x512", type: "image/png" },

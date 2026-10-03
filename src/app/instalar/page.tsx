@@ -52,7 +52,7 @@ export default async function Instalar() {
   return (
     <main className="mx-auto max-w-xl space-y-5 px-4 py-8">
       <div>
-        <Volver href="/" texto="Inicio" />
+        <Volver href="/admin" texto="Inicio" />
         <h1 className="display mt-2 text-2xl font-black">Estado de la base de datos</h1>
         <p className="text-sm text-tinta-suave">
           Esta pantalla revisa la conexión y crea lo que falte. Se puede volver

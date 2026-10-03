@@ -386,6 +386,101 @@ await listo();
 texto = await page.textContent("body");
 revisar("aparece en el día de la semana que se le agregó", texto.includes("Tarea editada e2e"));
 
+// 9. La tienda en línea (necesita la API del catálogo corriendo)
+const API = process.env.CATALOGO_API_URL;
+if (!API) {
+  console.log("—    sin CATALOGO_API_URL: se salta la tienda en línea");
+} else {
+  const llave = { "X-Api-Key": process.env.CATALOGO_API_KEY ?? "", "Content-Type": "application/json" };
+  // Borra el producto de prueba de una corrida anterior.
+  const todos = await (await fetch(`${API}/api/v1/admin/productos`, { headers: llave })).json();
+  for (const p of todos.filter((p) => p.nombre === "Aguardiente e2e")) {
+    await fetch(`${API}/api/v1/admin/productos/${p.id}`, { method: "DELETE", headers: llave });
+  }
+
+  // Sin clave: la tienda se ve, la administración no.
+  const cliente = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  cliente.on("pageerror", (e) => errores.push(String(e)));
+  let respuesta = await cliente.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  revisar("la tienda abre sin clave", respuesta.status() === 200 && (await cliente.textContent("body")).includes("su tienda de siempre"));
+  await cliente.goto(`${BASE}/caja`, { waitUntil: "networkidle" });
+  revisar("la caja sigue pidiendo clave", new URL(cliente.url()).pathname === "/entrar");
+  const accion = await fetch(`${BASE}/`, { method: "POST", headers: { "Next-Action": "x" } });
+  revisar("una acción sin sesión en la tienda se rechaza", accion.status === 401);
+  revisar("robots.txt esconde la administración", (await (await fetch(`${BASE}/robots.txt`)).text()).includes("Disallow: /admin"));
+  revisar("la administración pide no indexar", (await fetch(`${BASE}/entrar`)).headers.get("x-robots-tag")?.includes("noindex"));
+
+  // El admin crea un licor con una sola unidad y lo publica.
+  await page.goto(`${BASE}/admin/catalogo/nuevo`, { waitUntil: "networkidle" });
+  await listo();
+  await page.fill('input[name="nombre"]', "Aguardiente e2e");
+  await page.fill('input[name="presentacion"]', "Botella 750 ml");
+  await page.selectOption('select[name="categoriaId"]', { label: "Aguardiente" });
+  await page.fill('input[name="precio"]', "3000");
+  await page.fill('input[name="stock"]', "1");
+  await page.check('input[name="publicado"]');
+  await Promise.all([
+    page.waitForURL(/\/admin\/catalogo\/\d+$/, { timeout: 60000 }),
+    page.click('button:has-text("Crear producto")'),
+  ]);
+  await listo();
+  const enlace = await page.getAttribute('a:has-text("Ver en la tienda")', "href");
+  revisar("crear el producto lleva a su ficha", Boolean(enlace), page.url());
+
+  // El cliente lo ve, lo agrega (le pregunta la edad) y pide por WhatsApp.
+  respuesta = await cliente.goto(`${BASE}${enlace}`, { waitUntil: "networkidle" });
+  const html = await cliente.content();
+  revisar("el producto sale en la tienda", respuesta.status() === 200 && html.includes("Aguardiente e2e"));
+  revisar("con datos para Google", html.includes('"@type":"Product"') && html.includes('"priceCurrency":"COP"'));
+  await cliente.waitForFunction(() =>
+    Object.keys(document.querySelector("button") ?? {}).some((k) => k.startsWith("__react")),
+  );
+  await cliente.click('button:has-text("Agregar ·")');
+  revisar("un licor pregunta la mayoría de edad", await cliente.isVisible("text=¿Eres mayor de edad?"));
+  await cliente.click("text=Sí, tengo 18 o más");
+  let whatsapp = null;
+  await cliente.route("https://wa.me/**", (r) => {
+    whatsapp = decodeURIComponent(r.request().url());
+    r.fulfill({ body: "ok" });
+  });
+  await cliente.click('button[aria-label^="Ver pedido"]');
+  await cliente.fill('input[placeholder="Tu nombre"]', "Cliente e2e");
+  await cliente.fill('input[placeholder="Dirección y barrio"]', "Calle 26 Sur #4-10");
+  await cliente.click('button:has-text("Pedir por WhatsApp")');
+  await cliente.waitForFunction(() => location.host === "wa.me", null, { timeout: 30000 }).catch(() => {});
+  revisar(
+    "el pedido llega a WhatsApp con el producto y el total",
+    whatsapp?.includes("wa.me/573147167595") &&
+      whatsapp.includes("1 × Aguardiente e2e (Botella 750 ml) — $ 3.000") &&
+      whatsapp.includes("Total: $ 3.000"),
+    whatsapp ?? "(no abrió WhatsApp)",
+  );
+
+  // Con la clave de la tienda también se edita el catálogo: se acaba la unidad.
+  const tienda = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await tienda.goto(`${BASE}/entrar`, { waitUntil: "networkidle" });
+  await tienda.waitForFunction(() =>
+    Object.keys(document.querySelector("button") ?? {}).some((k) => k.startsWith("__react")),
+  );
+  await tienda.fill('input[name="pin"]', process.env.APP_PIN ?? "");
+  await Promise.all([
+    tienda.waitForURL((u) => !u.pathname.startsWith("/entrar"), { timeout: 15000 }),
+    tienda.click('button:has-text("Entrar")'),
+  ]);
+  await tienda.goto(`${BASE}/admin/catalogo`, { waitUntil: "networkidle" });
+  await tienda.waitForFunction(() =>
+    Object.keys(document.querySelector("button") ?? {}).some((k) => k.startsWith("__react")),
+  );
+  await tienda.click('button[aria-label="Restar uno al stock de Aguardiente e2e"]');
+  await tienda.waitForTimeout(2500);
+  await cliente.goto(`${BASE}${enlace}`, { waitUntil: "networkidle" });
+  revisar("lo agotado ya no se puede agregar", (await cliente.textContent("body")).includes("Agotado por ahora"));
+  await tienda.goto(`${BASE}/admin/tienda`, { waitUntil: "networkidle" });
+  revisar("los datos de la tienda piden la clave de administrador", tienda.url().includes("/entrar?admin=1"));
+  await tienda.close();
+  await cliente.close();
+}
+
 revisar("sin errores de JavaScript", errores.length === 0, errores.join(" | "));
 
 await browser.close();

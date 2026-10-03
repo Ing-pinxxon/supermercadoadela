@@ -99,3 +99,20 @@ export async function esAdmin(): Promise<boolean> {
 export async function exigirAdmin(destino = "/instalar"): Promise<void> {
   if (!(await esAdmin())) redirect(rutaParaPedirAdmin(destino));
 }
+
+/**
+ * Para las acciones del catálogo: cualquiera de las dos claves sirve, pero sin
+ * sesión no. El middleware ya lo exige en la administración; esto cubre una
+ * acción invocada desde una ruta pública.
+ */
+export async function exigirSesion(): Promise<void> {
+  const galletas = await cookies();
+  if (!puedeEntrar(galletas.get(COOKIE)?.value)) redirect("/entrar");
+}
+
+/**
+ * Cookie visible desde el navegador que solo dice «esta persona es del equipo»,
+ * para que la tienda le muestre el botón de Administración. No da acceso a
+ * nada: la puerta sigue siendo la cookie httpOnly de arriba.
+ */
+export const COOKIE_EQUIPO = "adela_equipo";

@@ -49,6 +49,26 @@
   --color-rojo: #ffb3a7;
   --color-rojo-fuerte: #ff8d7a;
 
+  /*
+   * La tienda en línea («tienda de barrio»): papel crema, cartón, rojo de
+   * Navidad, verde pino y la etiqueta amarilla de los precios. Solo se usan
+   * dentro de `.tienda`; la administración sigue con el verde y la crema.
+   */
+  --font-tienda: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mano: var(--font-kalam), "Comic Sans MS", cursive;
+  --color-papel: #f3e9d6;
+  --color-carton: #fffaf0;
+  --color-cafe: #2b2118;
+  --color-cafe-suave: #6f5f4b;
+  --color-navidad: #c0392b;
+  --color-navidad-osc: #8e2a20;
+  --color-pino: #1f4d2b;
+  --color-pino-osc: #10301a;
+  --color-maiz: #ffe08a;
+  --color-maiz-osc: #c9a94a;
+  --color-sombra: #d9c6a3;
+  --color-raya: #e9dcc3;
+
   --animate-aparecer: aparecer 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-girar: girar 0.7s linear infinite;
@@ -217,4 +237,129 @@ input[type="checkbox"] {
   .text-tinta-tenue {
     color: black !important;
   }
+}
+
+/* --- La tienda en línea ------------------------------------------------ */
+
+/* Toda la tienda va en papel claro, también el fondo detrás del rebote. */
+html:has(.tienda) {
+  color-scheme: light;
+  background: var(--color-papel);
+}
+
+.tienda {
+  background-color: var(--color-papel);
+  color: var(--color-cafe);
+  font-family: var(--font-tienda);
+}
+
+/* El papel con puntos de la maqueta. */
+.papel {
+  background-image: radial-gradient(#e5d6ba 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+/* Las sombras duras de cartón recortado. */
+.carton {
+  background: var(--color-carton);
+  box-shadow: 3px 3px 0 var(--color-sombra);
+}
+.carton-chico {
+  background: var(--color-carton);
+  box-shadow: 2px 2px 0 var(--color-sombra);
+}
+
+/* La etiqueta de precio escrita a mano. */
+.etiqueta-precio {
+  display: inline-block;
+  font-family: var(--font-mano);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-navidad);
+  background: var(--color-maiz);
+  padding: 0 0.5rem;
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Los letreros pegados en la foto: «Últimas unidades», «Oferta». */
+.letrero {
+  font-family: var(--font-mano);
+  font-weight: 700;
+  transform: rotate(-4deg);
+  border-radius: 3px;
+}
+
+/* El banner de temporada, con rayas suaves. */
+.rayado {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 10px,
+    rgb(255 255 255 / 0.04) 10px 20px
+  );
+}
+
+/* El recibo del pedido: borde de abajo recortado en zigzag. */
+.recibo {
+  position: relative;
+  background: #fffdf6;
+  box-shadow: 3px 3px 0 var(--color-sombra);
+}
+.recibo::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 8px;
+  background:
+    linear-gradient(-45deg, transparent 6px, #fffdf6 0) 0 0 / 12px 8px,
+    linear-gradient(45deg, transparent 6px, #fffdf6 0) 0 0 / 12px 8px;
+}
+
+/* Carruseles horizontales que se acomodan de a una tarjeta. */
+.tira {
+  display: flex;
+  gap: 0.625rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.tira::-webkit-scrollbar {
+  display: none;
+}
+.tira > * {
+  scroll-snap-align: start;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .saltar {
+    animation: saltar 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .subir {
+    animation: subir 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes saltar {
+  40% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes subir {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.tienda .esqueleto {
+  background: linear-gradient(90deg, #efe3cb 25%, #f8efdc 50%, #efe3cb 75%);
+  background-size: 200% 100%;
 }

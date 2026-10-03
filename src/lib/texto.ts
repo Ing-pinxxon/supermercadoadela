@@ -29,3 +29,8 @@ export function claveSql(columna: string): string {
     lower(translate(${columna}, '${CON_TILDE}', '${SIN_TILDE}')),
     '[^a-z0-9]', '', 'g')`;
 }
+
+/** «Buñuelos» → «Bunuelos»: para buscar sin que importen las tildes. */
+export function sinTildes(texto: string): string {
+  return texto.normalize("NFD").replace(/\p{M}+/gu, "");
+}

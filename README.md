@@ -1,6 +1,14 @@
 # Supermercado Adela
 
-Tres herramientas en un mismo proyecto:
+Una tienda en línea para los clientes y la administración interna del negocio,
+en el mismo enlace (`supermercadoadela.vercel.app`):
+
+- **La tienda** (`/`, abierta a todos) — el catálogo para el celular: licores,
+  cerveza, combos y lo de la novena, con precios, «últimas unidades» y
+  «agotado». El cliente arma su pedido y lo manda por **WhatsApp**. Sale en
+  Google (SEO, datos estructurados, mapa del sitio). Ver «La tienda en línea».
+- **La administración** (`/admin`, con clave) — lo de siempre más el catálogo:
+
 
 - **Caja** (`/caja`) — reemplaza la hoja "TIENDA". Abre en el día de hoy:
   registro rápido de pagos y entradas de plata, cierre del día, semana,
@@ -12,8 +20,19 @@ Tres herramientas en un mismo proyecto:
   edita en `/tareas/rutina`: cada tarea se ve una sola vez con sus días, y
   cambiarla la cambia en todos ellos.
 
-Next.js 15 (App Router) + PostgreSQL con SQL directo (`pg`). Sin ORM, sin paso
-de generación de código: lo que ves en `db/schema.sql` es lo que hay en la base.
+- **Catálogo** (`/admin/catalogo`) — productos, precios, stock, fotos, combos y
+  categorías de la tienda; datos del negocio y la guía para salir en Google.
+
+Next.js 15 (App Router) + PostgreSQL con SQL directo (`pg`) para la
+administración. El catálogo vive en una **API aparte en Java (Spring Boot)**,
+en la carpeta [`api/`](api/README.md), sobre la misma base de Neon.
+
+```
+Cliente (celular) ──► Next en Vercel ──(servidor a servidor)──► API Java en Render ──► Neon
+                      · la tienda (en caché)                     · esquema «catalogo»
+                      · /admin (con clave)
+                      · fotos en Vercel Blob
+```
 
 ## La fórmula
 
@@ -131,6 +150,34 @@ contra qué servidor habla, qué tablas hay y cuántas filas tiene cada cosa.
 Se aceptan tanto `DATABASE_URL` como los nombres que crea la integración de
 Neon (`POSTGRES_URL`, `DATABASE_URL_UNPOOLED`, …); `/instalar` dice cuál tomó.
 
+## La tienda en línea: lo que hay que configurar
+
+Además de lo de arriba, la tienda necesita tres cosas. Mientras falten, la
+página principal dice «Estamos preparando la tienda en línea» y la
+administración sigue funcionando igual.
+
+1. **La API del catálogo en Render** (gratis). En https://render.com: **New →
+   Blueprint** con este repositorio (usa `render.yaml`). En sus variables pon
+   `DATABASE_URL` = la misma cadena de Neon que tiene Vercel, tal cual. Render
+   genera `CATALOGO_API_KEY`: cópiala. Detalles en [`api/README.md`](api/README.md).
+2. **Las variables en Vercel** (Settings → Environment Variables):
+   - `CATALOGO_API_URL` = la dirección de Render, por ejemplo
+     `https://adela-catalogo.onrender.com`.
+   - `CATALOGO_API_KEY` = la misma clave de Render.
+   - `SITIO_URL` (opcional) = la dirección pública, si algún día cambia de
+     `https://supermercadoadela.vercel.app` (por ejemplo, con dominio propio).
+3. **Las fotos**: en Vercel, **Storage → Create → Blob → Connect** al proyecto.
+   Crea `BLOB_READ_WRITE_TOKEN` sola.
+
+Después, **Redeploy** en Vercel. La API trae 38 productos de diciembre ocultos y
+en $ 0: en `/admin/catalogo` se les pone precio, stock y foto, y se publican.
+
+Render gratis se duerme a los 15 minutos sin uso y tarda ~50 s en despertar.
+La tienda guarda en caché lo que lee (se refresca cada 5 minutos y al instante
+cuando se edita algo), así que el cliente casi no lo nota; en la administración,
+la primera edición después de un rato puede demorar y la pantalla dice
+«Conectando con el catálogo…».
+
 ## Desplegar en Railway
 
 1. Sube el repo a GitHub y en Railway haz **New Project → Deploy from GitHub**.
@@ -148,7 +195,11 @@ Neon (`POSTGRES_URL`, `DATABASE_URL_UNPOOLED`, …); `/instalar` dice cuál tom�
   tareas. **No ve** los totales de la semana, el tablero ni el archivo: esas
   pantallas ni siquiera le aparecen en el menú.
 - `APP_PIN_ADMIN` — la del administrador. Ve todo, incluidas la semana, el
-  tablero, el archivo y `/instalar`.
+  tablero, el archivo, los datos de la tienda y `/instalar`.
+
+Las dos editan el catálogo. La tienda (`/`, `/c/…`, `/p/…`) no pide clave. Al
+entrar, la administración arranca en `/admin` (antes era `/`); quien ya entró
+ve en la tienda un botón «← Administración» arriba a la izquierda.
 
 Son claves compartidas del negocio, no cuentas por persona (cookie de un mes).
 La clave con la que se entra decide lo que se ve; arriba a la derecha dice si
@@ -192,6 +243,44 @@ caja del día solo. El nombre se agrupa igual que los proveedores: «Doña Rosa�
 **En la semana** (`/caja`): la misma tabla de la hoja — cada día con sus salidas,
 entradas, venta e ingreso, más los totales. Abajo, en qué se fue la plata esa
 semana y el conteo de efectivo comparado con la semana anterior.
+
+## La tienda en línea
+
+`/` es lo primero que ve cualquiera que abra el enlace. Diseño «tienda de
+barrio»: papel crema, precios en etiqueta amarilla escritos a mano, rojo de
+Navidad.
+
+- **Inicio**: banner de temporada (se prende y apaga en Datos de la tienda),
+  estantes por categoría, lo más pedido, el combo de la semana, ofertas, cada
+  estante en una fila que se desliza, y «¿Pedido grande o para fiesta?».
+- **Producto** (`/p/…`): foto, precio, «Va bien con…» y la barra para agregar.
+- **Categoría** (`/c/…`): todo lo de un estante.
+- **Pedido**: el carrito vive en el celular del cliente. Antes de mandarlo, la
+  API lo revisa contra los precios y el stock de ese momento (avisa si algo
+  cambió o se acabó) y arma el mensaje; se abre WhatsApp con el pedido escrito
+  al número de la tienda. No se guardan pedidos: el stock se baja a mano.
+- **Licores**: la primera vez que se agrega uno pregunta si es mayor de edad, y
+  lleva las leyendas de ley (Ley 30 de 1986 y Ley 124 de 1994). No hay
+  cigarrillos: la Ley 1335 de 2009 prohíbe promocionarlos.
+- **Google**: títulos y descripciones con barrio y ciudad, datos estructurados
+  de tienda y de producto (precio en pesos y disponibilidad), `sitemap.xml`,
+  `robots.txt` (la administración no se indexa) e imagen para compartir. La
+  guía para el Perfil de Negocio y Search Console está en `/admin/google`.
+
+El cliente nunca ve el número de stock: «Últimas unidades» con 5 o menos,
+«Agotado» en 0, y nada si no se lleva la cuenta.
+
+### El catálogo en la administración
+
+Con **cualquiera de las dos claves** (`/admin/catalogo`): la lista para usar
+parado en la tienda (buscar, tocar el precio para cambiarlo, − y + para el
+stock, el interruptor para mostrar u ocultar), la ficha de cada producto con la
+foto desde el celular (se achica sola antes de subir), «Va bien con…» y el
+historial de quién cambió qué; los combos y las categorías.
+
+Solo el administrador: **Datos de la tienda** (WhatsApp, dirección, horario,
+valor del domicilio, Nequi, banner de temporada, código de Search Console) y la
+**guía de Google**.
 
 ## El tablero
 
@@ -264,6 +353,11 @@ src/lib/fiados.ts    Saldos y movimientos de los fiados.
                      (la caja de la semana está en caja.ts, con lo demás)
 src/lib/sesion.ts    Las dos claves y qué puede ver cada una.
 src/lib/historico.ts Consultas del archivo de la hoja (solo lectura).
+src/lib/api-catalogo.ts  Cliente de la API Java del catálogo (solo servidor).
+src/app/(tienda)/    La tienda en línea: inicio, /c/… y /p/….
+src/app/admin/       La administración: inicio, catálogo, datos de la tienda, Google.
+src/components/tienda/   Carrito, tarjetas, buscador, dibujos, datos para Google.
+api/                 La API del catálogo en Java (Spring Boot). Ver api/README.md.
 src/lib/tablero.ts   Lo registrado en la app, para el tablero.
 src/lib/tareas.ts    Consultas del módulo de tareas.
 src/components/      UI, registro rápido, navegación y gráficas (SVG).
@@ -303,11 +397,14 @@ Cinco decisiones que conviene no romper:
 ```bash
 npm run db:verificar   # aritmética de caja, tareas, tablero y archivo
 npm run test:e2e       # formularios en un navegador (requiere npm start en :3100)
+cd api && ./mvnw verify # la API en Java (necesita Docker)
 ```
 
 **No las corras apuntando a la base del negocio**: `db:verificar` inserta y borra
 registros de la semana del 2 de septiembre de 2026 y de la semana en curso, y
-`test:e2e` usa días de septiembre de 2030.
+`test:e2e` usa días de septiembre de 2030. Si `CATALOGO_API_URL` apunta a una
+API corriendo, `test:e2e` también prueba la tienda: crea «Aguardiente e2e»,
+lo pide por WhatsApp (sin abrirlo de verdad) y lo deja agotado.
 
 ## Qué falta / siguientes pasos
 

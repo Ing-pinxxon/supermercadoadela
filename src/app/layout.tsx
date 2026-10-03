@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cabin, Fraunces } from "next/font/google";
+import { Archivo, Cabin, Fraunces, Kalam } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -23,9 +23,29 @@ const cabin = Cabin({
   display: "swap",
 });
 
+/**
+ * Las de la tienda en línea: Archivo para todo, Kalam para lo escrito a mano
+ * (precios y letreros).
+ */
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+
+const kalam = Kalam({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-kalam",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Supermercado Adela",
-  description: "Caja, fiados y rutina diaria del negocio.",
+  metadataBase: new URL(process.env.SITIO_URL ?? "https://supermercadoadela.vercel.app"),
+  title: { default: "Supermercado Adela", template: "%s · Supermercado Adela" },
+  description:
+    "Licores, cerveza y mercado con domicilio en San Inés Sur, Bogotá. Pide por WhatsApp.",
   appleWebApp: { capable: true, title: "Adela", statusBarStyle: "default" },
 };
 
@@ -42,7 +62,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es-CO" className={`${fraunces.variable} ${cabin.variable}`}>
+    <html
+      lang="es-CO"
+      className={`${fraunces.variable} ${cabin.variable} ${archivo.variable} ${kalam.variable}`}
+    >
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

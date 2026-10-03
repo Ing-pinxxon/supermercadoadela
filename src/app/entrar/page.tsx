@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Campo, Texto } from "@/components/ui";
 import { Boton } from "@/components/boton";
-import { COOKIE, puedeEntrar, rolDe, rutaSegura } from "@/lib/sesion";
+import { COOKIE, COOKIE_EQUIPO, puedeEntrar, rolDe, rutaSegura } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +10,9 @@ async function entrar(datos: FormData) {
   "use server";
 
   const pin = process.env.APP_PIN;
-  if (!pin) redirect("/");
+  if (!pin) redirect("/admin");
 
-  const volver = rutaSegura(String(datos.get("volver") ?? "")) ?? "/";
+  const volver = rutaSegura(String(datos.get("volver") ?? "")) ?? "/admin";
   const pideAdmin = String(datos.get("admin") ?? "") === "1";
   const deVuelta = (error: string) =>
     `/entrar?error=${error}${pideAdmin ? "&admin=1" : ""}&volver=${encodeURIComponent(volver)}`;
@@ -33,6 +33,12 @@ async function entrar(datos: FormData) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30, // un mes
   });
+  galletas.set(COOKIE_EQUIPO, "1", {
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
 
   redirect(volver);
 }
@@ -44,7 +50,7 @@ export default async function Entrar({
 }) {
   const { error, admin, volver } = await searchParams;
   const pideAdmin = admin === "1";
-  const destino = rutaSegura(volver) ?? "/";
+  const destino = rutaSegura(volver) ?? "/admin";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">

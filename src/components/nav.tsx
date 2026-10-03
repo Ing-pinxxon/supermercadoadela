@@ -42,7 +42,7 @@ function Contenido({ children }: { children: React.ReactNode }) {
 }
 
 const BASE =
-  "inline-flex min-h-11 items-center justify-center rounded-full px-3.5 text-sm font-medium transition active:scale-95";
+  "inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-sm font-medium transition active:scale-95";
 
 /** Enlace del encabezado. Se pinta distinto cuando es la pantalla actual. */
 export function EnlaceNav({

@@ -4,13 +4,17 @@ import { rolActual } from "@/lib/sesion";
 import { hoy } from "@/lib/fechas";
 
 /**
- * La barra de arriba, igual en caja, fiados y tareas.
+ * La barra de arriba, igual en caja, fiados, tareas y el catálogo.
  *
  * Los enlaces dependen del rol: quien entra con la clave de la tienda no ve
  * Semana ni Histórico — para él esas pantallas no existen. El middleware
  * bloquea la ruta; esto es lo que hace que ni siquiera se ofrezca.
  */
-export async function Encabezado({ seccion }: { seccion: "caja" | "tareas" }) {
+export async function Encabezado({
+  seccion,
+}: {
+  seccion: "caja" | "tareas" | "catalogo";
+}) {
   const rol = await rolActual();
   const admin = rol === "admin" || rol === "abierto";
 
@@ -19,7 +23,7 @@ export async function Encabezado({ seccion }: { seccion: "caja" | "tareas" }) {
       <div className="mx-auto max-w-3xl px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <Link
-            href="/"
+            href="/admin"
             className="display rounded-lg px-2 py-1 text-lg font-black text-crema-100 transition active:scale-95 hover:bg-crema-200/10"
           >
             Adela
@@ -50,6 +54,23 @@ export async function Encabezado({ seccion }: { seccion: "caja" | "tareas" }) {
                   <EnlaceNav href="/caja/historico">Archivo</EnlaceNav>
                 </>
               )}
+            </>
+          ) : seccion === "catalogo" ? (
+            <>
+              <EnlaceNav href="/admin/catalogo" exacto>
+                Productos
+              </EnlaceNav>
+              <EnlaceNav href="/admin/catalogo/combos">Combos</EnlaceNav>
+              <EnlaceNav href="/admin/catalogo/categorias">Categorías</EnlaceNav>
+              {admin && (
+                <>
+                  <EnlaceNav href="/admin/tienda">Datos de la tienda</EnlaceNav>
+                  <EnlaceNav href="/admin/google">Google</EnlaceNav>
+                </>
+              )}
+              <EnlaceNav href="/" exacto>
+                Ver tienda ↗
+              </EnlaceNav>
             </>
           ) : (
             <>
