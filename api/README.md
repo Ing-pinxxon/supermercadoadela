@@ -38,6 +38,9 @@ Al arrancar, Flyway crea el esquema `catalogo` y carga la semilla: 11 categoría
 ./mvnw verify
 ```
 
+Las pruebas de la API corren contra un Postgres desechable en Docker, nunca
+contra Neon.
+
 Corre las pruebas de unidad (reglas, mensaje de WhatsApp, conversión de la
 cadena de Neon) y las de integración, que levantan un Postgres de verdad en
 Docker con Testcontainers. Necesitas Docker abierto.
@@ -104,14 +107,34 @@ todo bajo `/api/v1/admin/`: CRUD de `productos`, `categorias` y `combos`;
 `GET productos/{id}/historial`; `PUT tienda`. Los errores salen siempre como
 Problem Details (RFC 7807) en español, listos para mostrar.
 
+## Antes de desplegar: cuidar las cuentas del día a día
+
+La API comparte la base de Neon con la caja, los fiados y las tareas. Dos pasos
+para que nada de esto pueda tocarlas:
+
+1. **Una copia de respaldo.** En https://console.neon.tech → tu proyecto →
+   **Branches → Create branch**, con un nombre como `respaldo-antes-tienda`.
+   Es una copia exacta de cómo está la base en ese momento; si algo saliera
+   mal, de ahí se recupera.
+2. **Un usuario solo para la API.** En **SQL Editor**, pega el contenido de
+   [`neon-usuario-catalogo.sql`](neon-usuario-catalogo.sql), cambia
+   `CAMBIA_ESTA_CLAVE` por una clave larga inventada y dale **Run**. Ese
+   usuario (`catalogo_api`) es dueño solo del esquema `catalogo` y no puede
+   leer, cambiar ni borrar nada de la caja, los fiados ni las tareas. Probado:
+   con él, `SELECT` o `DELETE` sobre `movimiento` dan «permiso denegado», y la
+   API arranca y crea su esquema normal.
+
 ## Desplegar en Render (gratis)
 
 1. En https://render.com: **New → Blueprint** y elige este repositorio. Render
    lee `render.yaml` (en la raíz) y crea el servicio `adela-catalogo`.
 2. En las variables del servicio:
-   - `DATABASE_URL`: la cadena de Neon, la misma que tiene Vercel. Se pega tal
-     cual (`postgresql://…`); la API la convierte sola y usa el host directo,
-     no el `-pooler`.
+   - `DATABASE_URL`: la cadena de Neon **con el usuario de la API**, no con el
+     dueño de la base. Toma la que tiene Vercel y cambia lo que va entre
+     `postgresql://` y `@` por `catalogo_api:TU_CLAVE`:
+     `postgresql://catalogo_api:TU_CLAVE@ep-xxxx.aws.neon.tech/neondb?sslmode=require`.
+     La API la convierte sola al formato de Java y usa el host directo, no
+     el `-pooler`.
    - `CATALOGO_API_KEY`: Render la genera sola. Cópiala: la misma va en Vercel.
 3. Cuando diga *Live*, abre `https://adela-catalogo.onrender.com/actuator/health`:
    tiene que decir `UP`.

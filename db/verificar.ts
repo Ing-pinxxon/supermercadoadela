@@ -4,7 +4,8 @@
  *   npm run db:verificar
  */
 import "dotenv/config";
-import { consultar, consultarUna, nuevoId, pool } from "../src/lib/db";
+import { consultar, consultarUna, nuevoId, origenCadena, pool } from "../src/lib/db";
+import { exigirLocal } from "./solo-local.mjs";
 import {
   resumenDia,
   resumenSemana,
@@ -89,6 +90,9 @@ async function fiar(deudorId: string, tipo: "FIADO" | "ABONO", monto: number) {
 }
 
 async function main() {
+  // Antes de tocar nada: solo contra una base de este computador.
+  const origen = origenCadena();
+  if (origen) exigirLocal({ [origen.nombre]: origen.cadena });
   await limpiar();
 
   const vacio = await resumenDia(FECHA);

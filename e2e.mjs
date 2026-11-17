@@ -10,8 +10,17 @@ import "dotenv/config";
 import { chromium } from "playwright";
 import { readdirSync } from "node:fs";
 import { Pool } from "pg";
+import { exigirLocal } from "./db/solo-local.mjs";
 
 const BASE = process.env.BASE ?? "http://localhost:3100";
+
+// Antes de abrir nada: la base, la app y la API tienen que ser de este
+// computador (las pruebas borran datos y crean productos de prueba).
+exigirLocal({
+  DATABASE_URL: process.env.DATABASE_URL,
+  BASE,
+  CATALOGO_API_URL: process.env.CATALOGO_API_URL,
+});
 
 /**
  * El Chromium de Playwright. La carpeta trae el número de build en el nombre,

@@ -38,6 +38,9 @@ spring:
     schemas: catalogo
     default-schema: catalogo
     create-schemas: true
+    # «clean» borra todo el esquema. Nunca, aquí: ya viene apagado en Spring
+    # Boot 3, pero queda escrito para que nadie lo prenda por accidente.
+    clean-disabled: true
 
 catalogo:
   # La clave que Next manda en X-Api-Key para poder escribir. Sin ella

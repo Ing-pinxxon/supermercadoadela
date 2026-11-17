@@ -156,10 +156,13 @@ Además de lo de arriba, la tienda necesita tres cosas. Mientras falten, la
 página principal dice «Estamos preparando la tienda en línea» y la
 administración sigue funcionando igual.
 
-1. **La API del catálogo en Render** (gratis). En https://render.com: **New →
-   Blueprint** con este repositorio (usa `render.yaml`). En sus variables pon
-   `DATABASE_URL` = la misma cadena de Neon que tiene Vercel, tal cual. Render
-   genera `CATALOGO_API_KEY`: cópiala. Detalles en [`api/README.md`](api/README.md).
+1. **La API del catálogo en Render** (gratis). Antes, en Neon: una rama de
+   respaldo y el usuario `catalogo_api` (que no puede tocar la caja ni los
+   fiados), con [`api/neon-usuario-catalogo.sql`](api/neon-usuario-catalogo.sql).
+   Luego en https://render.com: **New → Blueprint** con este repositorio (usa
+   `render.yaml`). En `DATABASE_URL` va la cadena de Neon con ese usuario.
+   Render genera `CATALOGO_API_KEY`: cópiala. Paso a paso en
+   [`api/README.md`](api/README.md).
 2. **Las variables en Vercel** (Settings → Environment Variables):
    - `CATALOGO_API_URL` = la dirección de Render, por ejemplo
      `https://adela-catalogo.onrender.com`.
@@ -400,7 +403,9 @@ npm run test:e2e       # formularios en un navegador (requiere npm start en :310
 cd api && ./mvnw verify # la API en Java (necesita Docker)
 ```
 
-**No las corras apuntando a la base del negocio**: `db:verificar` inserta y borra
+**Solo corren contra una base de este computador**: si `DATABASE_URL` (o la
+app, o la API) apunta a otro lado, se niegan antes de conectarse
+(`db/solo-local.mjs`). Es a propósito: `db:verificar` inserta y borra
 registros de la semana del 2 de septiembre de 2026 y de la semana en curso, y
 `test:e2e` usa días de septiembre de 2030. Si `CATALOGO_API_URL` apunta a una
 API corriendo, `test:e2e` también prueba la tienda: crea «Aguardiente e2e»,
