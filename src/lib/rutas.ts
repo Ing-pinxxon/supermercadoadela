@@ -8,6 +8,7 @@ export function esPublica(pathname: string): boolean {
     pathname.startsWith("/c/") ||
     pathname.startsWith("/p/") ||
     pathname.startsWith("/api/carrito") ||
+    pathname.startsWith("/portada/") ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
     pathname === "/manifest.webmanifest" ||

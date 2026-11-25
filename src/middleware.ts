@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE, puedeEntrar, rolDe, rutaParaPedirAdmin } from "@/lib/sesion";
 import { esPublica } from "@/lib/rutas";
+import { esAdminTienda, sitio, urlTienda } from "@/lib/sitio";
 
 /** Lo que solo ve el administrador: la plata de la semana y el histórico. */
 const SOLO_ADMIN = [
@@ -21,6 +22,29 @@ const SOLO_ADMIN = [
 export function middleware(peticion: NextRequest) {
   const { pathname } = peticion.nextUrl;
   const cookie = peticion.cookies.get(COOKIE)?.value;
+  const modo = sitio();
+
+  // La web de la tienda solo tiene la tienda y la administración del catálogo:
+  // la caja, los fiados y las tareas no existen allá (ni tiene la base para eso).
+  if (
+    modo === "tienda" &&
+    !esPublica(pathname) &&
+    !esAdminTienda(pathname) &&
+    !pathname.startsWith("/entrar") &&
+    !pathname.startsWith("/salir")
+  ) {
+    return new NextResponse("No existe", { status: 404, headers: { "X-Robots-Tag": "noindex, nofollow" } });
+  }
+
+  // La app de todos los días manda lo de la tienda a la otra web.
+  if (modo === "app") {
+    const otra = (ruta: string) =>
+      NextResponse.redirect(new URL(ruta + peticion.nextUrl.search, `${urlTienda()}/`), 307);
+    if (pathname === "/") return NextResponse.redirect(new URL("/admin", peticion.url), 307);
+    if (pathname.startsWith("/c/") || pathname.startsWith("/p/")) return otra(pathname);
+    if (pathname.startsWith("/api/carrito")) return new NextResponse("No existe", { status: 404 });
+    if (esAdminTienda(pathname) && pathname !== "/admin") return otra(pathname);
+  }
 
   if (esPublica(pathname)) {
     // Una acción del servidor se puede invocar con un POST a cualquier ruta,

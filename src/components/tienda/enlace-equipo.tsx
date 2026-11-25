@@ -11,7 +11,7 @@ export function EnlaceEquipo() {
   return (
     <Link
       href="/admin"
-      className="fixed left-3 top-[calc(0.5rem+env(safe-area-inset-top))] z-50 rounded-full bg-cafe/85 px-3 py-1 text-xs font-semibold text-papel shadow"
+      className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-3 z-50 rounded-full border border-white/15 bg-black/75 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur"
     >
       ← Administración
     </Link>

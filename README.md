@@ -150,30 +150,52 @@ contra qué servidor habla, qué tablas hay y cuántas filas tiene cada cosa.
 Se aceptan tanto `DATABASE_URL` como los nombres que crea la integración de
 Neon (`POSTGRES_URL`, `DATABASE_URL_UNPOOLED`, …); `/instalar` dice cuál tomó.
 
-## La tienda en línea: lo que hay que configurar
+## La tienda en línea: otra web, aparte de la app
 
-Además de lo de arriba, la tienda necesita tres cosas. Mientras falten, la
-página principal dice «Estamos preparando la tienda en línea» y la
-administración sigue funcionando igual.
+La tienda va en su propia web, **tienda-adela.vercel.app**, y la app de todos
+los días sigue en **supermercadoadela.vercel.app**. Es el mismo código; la
+variable `SITIO` dice qué es cada una:
 
-1. **La API del catálogo en Render** (gratis). Antes, en Neon: una rama de
-   respaldo y el usuario `catalogo_api` (que no puede tocar la caja ni los
-   fiados), con [`api/neon-usuario-catalogo.sql`](api/neon-usuario-catalogo.sql).
-   Luego en https://render.com: **New → Blueprint** con este repositorio (usa
-   `render.yaml`). En `DATABASE_URL` va la cadena de Neon con ese usuario.
-   Render genera `CATALOGO_API_KEY`: cópiala. Paso a paso en
-   [`api/README.md`](api/README.md).
-2. **Las variables en Vercel** (Settings → Environment Variables):
+| Web | `SITIO` | Qué tiene | Base de la caja |
+|---|---|---|---|
+| tienda-adela.vercel.app | `tienda` | La tienda y la administración del catálogo | No: no tiene `DATABASE_URL` |
+| supermercadoadela.vercel.app | `app` | Caja, fiados, tareas, tablero | Sí |
+| En el computador | (sin `SITIO`) | Todo junto | La local |
+
+En la web de la tienda, `/caja`, `/fiado`, `/tareas` y `/instalar` dan «No
+existe», y ese proyecto ni siquiera tiene la clave de la base: no puede leer ni
+dañar las cuentas del día a día aunque quisiera. Con `SITIO=app`, la app manda
+lo de la tienda (`/`, `/c/…`, `/p/…`, `/admin/catalogo`) a la otra web.
+
+Lo que hay que hacer, en este orden:
+
+1. **Respaldo y usuario en Neon.** Una rama de respaldo y el usuario
+   `catalogo_api` (que no puede tocar la caja ni los fiados), con
+   [`api/neon-usuario-catalogo.sql`](api/neon-usuario-catalogo.sql).
+2. **La API del catálogo en Render** (gratis): **New → Blueprint** con este
+   repositorio y la rama `tienda` (usa `render.yaml`). En `DATABASE_URL` va la
+   cadena de Neon con el usuario `catalogo_api`. Render genera
+   `CATALOGO_API_KEY`: cópiala. Paso a paso en [`api/README.md`](api/README.md).
+3. **El proyecto de la tienda en Vercel**, `tienda-adela`, publicado desde la
+   rama `tienda`, con estas variables (Settings → Environment Variables):
+   - `SITIO` = `tienda`
+   - `SITIO_URL` = `https://tienda-adela.vercel.app`
    - `CATALOGO_API_URL` = la dirección de Render, por ejemplo
      `https://adela-catalogo.onrender.com`.
    - `CATALOGO_API_KEY` = la misma clave de Render.
-   - `SITIO_URL` (opcional) = la dirección pública, si algún día cambia de
-     `https://supermercadoadela.vercel.app` (por ejemplo, con dominio propio).
-3. **Las fotos**: en Vercel, **Storage → Create → Blob → Connect** al proyecto.
-   Crea `BLOB_READ_WRITE_TOKEN` sola.
+   - `APP_PIN` y `APP_PIN_ADMIN` = las claves para entrar a editar el catálogo
+     (pueden ser las mismas de la app).
+   - **Las fotos**: Storage → Create → Blob → Connect al proyecto. Crea
+     `BLOB_READ_WRITE_TOKEN` sola.
 
-Después, **Redeploy** en Vercel. La API trae 38 productos de diciembre ocultos y
-en $ 0: en `/admin/catalogo` se les pone precio, stock y foto, y se publican.
+   **No** se le pone `DATABASE_URL`. Después, **Redeploy**.
+4. **Cuando se suba esto a la app** (no antes): en el proyecto
+   `supermercadoadela`, `SITIO` = `app`. Opcional: `TIENDA_URL` si la tienda
+   cambia de dirección.
+
+La API trae 38 productos de diciembre ocultos y en $ 0: en `/admin/catalogo` se
+les pone precio, stock y foto, y se publican. Mientras la API no esté, la
+tienda dice «Estamos preparando la tienda en línea».
 
 Render gratis se duerme a los 15 minutos sin uso y tarda ~50 s en despertar.
 La tienda guarda en caché lo que lee (se refresca cada 5 minutos y al instante
@@ -249,14 +271,21 @@ semana y el conteo de efectivo comparado con la semana anterior.
 
 ## La tienda en línea
 
-`/` es lo primero que ve cualquiera que abra el enlace. Diseño «tienda de
-barrio»: papel crema, precios en etiqueta amarilla escritos a mano, rojo de
-Navidad.
+`/` es lo primero que ve cualquiera que abra el enlace. Diseño «neón
+navideño» (`src/app/(tienda)/neon.css`): de noche, letreros de neón de tubo,
+la calle de diciembre con los cerros y Monserrate, y botellas de vitrina.
 
-- **Inicio**: banner de temporada (se prende y apaga en Datos de la tienda),
-  estantes por categoría, lo más pedido, el combo de la semana, ofertas, cada
-  estante en una fila que se desliza, y «¿Pedido grande o para fiesta?».
-- **Producto** (`/p/…`): foto, precio, «Va bien con…» y la barra para agregar.
+- **Inicio**: la portada con el anuncio de temporada (se edita en Datos de la
+  tienda), el letrero «Abierto / Cerrado» y los días que faltan para la novena
+  (con la hora de Bogotá), la franja de domicilio y pago, las categorías como
+  tarjetas de neón, lo más vendido, los combos, las ofertas y «¿Pedido grande o
+  para fiesta?».
+- **Producto** (`/p/…`): la vitrina en grande, precio, disponibilidad,
+  «Va bien con…» y la barra para agregar.
+- **Fotos**: el producto con foto la muestra en la vitrina; el que no tiene,
+  una botella dibujada según su estante y su nombre (`src/lib/vitrina.ts`).
+  La calle de la portada es un SVG que se arma una vez y el navegador guarda
+  (`/portada/calle.svg`, de `src/lib/calle.js`).
 - **Categoría** (`/c/…`): todo lo de un estante.
 - **Pedido**: el carrito vive en el celular del cliente. Antes de mandarlo, la
   API lo revisa contra los precios y el stock de ese momento (avisa si algo

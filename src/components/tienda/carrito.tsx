@@ -3,6 +3,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { PedidoRespuesta } from "@/lib/api-catalogo";
 import { pesos } from "@/lib/dinero";
+import { Miniatura } from "@/components/tienda/vitrina";
+import {
+  Billete,
+  Candado,
+  Carro,
+  Casa,
+  Chat,
+  Check,
+  Cerrar,
+  Flecha,
+  IconoWhatsApp,
+  Mas,
+  Menos,
+  Moto,
+} from "@/components/tienda/iconos-neon";
+
+export { IconoWhatsApp };
 
 /**
  * El carrito de la tienda: vive en el navegador (sobrevive a cerrar la
@@ -20,6 +37,8 @@ export type Articulo = {
   presentacion: string | null;
   precio: number;
   esLicor: boolean;
+  /** El estante, para dibujar la miniatura en el pedido. */
+  icono?: string;
 };
 
 type Linea = Articulo & { cantidad: number };
@@ -35,7 +54,8 @@ type Contexto = {
   cuenta: number;
   total: number;
   cantidad: (tipo: Articulo["tipo"], id: number) => number;
-  agregar: (a: Articulo, n?: number) => void;
+  /** `desde` es el botón que se tocó: de ahí sale volando el «+1» al carrito. */
+  agregar: (a: Articulo, n?: number, desde?: Element | null) => void;
   cambiar: (tipo: Articulo["tipo"], id: number, delta: number) => void;
   /** Deja el carrito como lo revisó la API: precios de hoy, sin lo que se acabó. */
   sincronizar: (r: PedidoRespuesta) => void;
@@ -73,12 +93,39 @@ function guardar(llave: string, valor: unknown) {
   }
 }
 
+const quieto = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** El «+1» que vuela desde el botón hasta el carrito del encabezado. */
+function volar(desde: Element | null | undefined) {
+  const carro = document.querySelector("[data-carro]");
+  if (!desde || !carro || quieto()) return;
+  const a = desde.getBoundingClientRect();
+  const b = carro.getBoundingClientRect();
+  if (a.width === 0 || b.width === 0) return;
+  const [x0, y0, x1, y1] = [a.left + a.width / 2, a.top + a.height / 2, b.left + b.width / 2, b.top + b.height / 2];
+  const v = document.createElement("div");
+  v.className = "ne-volador";
+  v.textContent = "+1";
+  document.body.appendChild(v);
+  const pico = Math.min(y0, y1) - 70;
+  v.animate(
+    [
+      { transform: `translate(${x0}px,${y0}px) scale(1)`, opacity: 1 },
+      { transform: `translate(${(x0 + x1) / 2}px,${pico}px) scale(.9)`, opacity: 1, offset: 0.5 },
+      { transform: `translate(${x1}px,${y1}px) scale(.35)`, opacity: 0.2 },
+    ],
+    { duration: 720, easing: "cubic-bezier(.45,0,.55,1)" },
+  ).onfinish = () => v.remove();
+}
+
 export function Carrito({ tienda, children }: { tienda: DatosTienda; children: React.ReactNode }) {
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [listo, setListo] = useState(false);
   const [abierta, setAbierta] = useState(false);
   const [barraPropia, setBarraPropia] = useState(false);
-  const [preguntaEdad, setPreguntaEdad] = useState<{ a: Articulo; n: number } | null>(null);
+  const [preguntaEdad, setPreguntaEdad] = useState<{ a: Articulo; n: number; desde?: Element | null } | null>(null);
+  const [aviso, setAviso] = useState<{ texto: string; n: number } | null>(null);
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setLineas(leer<Linea[]>(LLAVE, []));
@@ -87,6 +134,12 @@ export function Carrito({ tienda, children }: { tienda: DatosTienda; children: R
   useEffect(() => {
     if (listo) guardar(LLAVE, lineas);
   }, [lineas, listo]);
+
+  const avisar = useCallback((texto: string) => {
+    setAviso((a) => ({ texto, n: (a?.n ?? 0) + 1 }));
+    if (temporizador.current) clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => setAviso(null), 1900);
+  }, []);
 
   const poner = useCallback((a: Articulo, n: number) => {
     setLineas((actual) => {
@@ -98,15 +151,26 @@ export function Carrito({ tienda, children }: { tienda: DatosTienda; children: R
     });
   }, []);
 
+  /** Agrega y lo celebra: vuela al carrito y, si es nuevo, sale el aviso. */
+  const agregarYa = useCallback(
+    (a: Articulo, n: number, desde?: Element | null) => {
+      const nuevo = !lineas.some((l) => l.tipo === a.tipo && l.id === a.id);
+      poner(a, n);
+      volar(desde);
+      if (nuevo) avisar(`Agregado: ${a.nombre}`);
+    },
+    [lineas, poner, avisar],
+  );
+
   const valor = useMemo<Contexto>(
     () => ({
       lineas,
       cuenta: lineas.reduce((s, l) => s + l.cantidad, 0),
       total: lineas.reduce((s, l) => s + l.cantidad * l.precio, 0),
       cantidad: (tipo, id) => lineas.find((l) => l.tipo === tipo && l.id === id)?.cantidad ?? 0,
-      agregar: (a, n = 1) => {
-        if (a.esLicor && !leer(LLAVE_EDAD, false)) return setPreguntaEdad({ a, n });
-        poner(a, n);
+      agregar: (a, n = 1, desde) => {
+        if (a.esLicor && !leer(LLAVE_EDAD, false)) return setPreguntaEdad({ a, n, desde });
+        agregarYa(a, n, desde);
       },
       cambiar: (tipo, id, delta) => {
         const l = lineas.find((x) => x.tipo === tipo && x.id === id);
@@ -122,7 +186,7 @@ export function Carrito({ tienda, children }: { tienda: DatosTienda; children: R
       abrir: () => setAbierta(true),
       usarBarraPropia: setBarraPropia,
     }),
-    [lineas, poner],
+    [lineas, poner, agregarYa],
   );
 
   return (
@@ -135,12 +199,18 @@ export function Carrito({ tienda, children }: { tienda: DatosTienda; children: R
           responder={(mayor) => {
             if (mayor) {
               guardar(LLAVE_EDAD, true);
-              poner(preguntaEdad.a, preguntaEdad.n);
+              agregarYa(preguntaEdad.a, preguntaEdad.n, preguntaEdad.desde);
+            } else {
+              avisar("Listo. Puedes pedir hielo, gaseosas y mecato.");
             }
             setPreguntaEdad(null);
           }}
         />
       )}
+      <div className={`ne-aviso${aviso ? " ver" : ""}`} role="status" aria-live="polite">
+        <Check />
+        <span>{aviso?.texto}</span>
+      </div>
     </CarritoCtx.Provider>
   );
 }
@@ -151,47 +221,48 @@ function BarraPedido({ oculta }: { oculta: boolean }) {
   const { cuenta, total, abrir } = useCarrito();
   const visible = cuenta > 0 && !oculta;
   return (
-    <div
-      className={`fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] transition-transform duration-300 ${
-        visible ? "translate-y-0" : "translate-y-[130%]"
-      }`}
+    <button
+      type="button"
+      onClick={abrir}
+      tabIndex={visible ? 0 : -1}
       aria-hidden={!visible}
+      className={`ne-barra${visible ? " ver" : ""}`}
     >
-      <button
-        type="button"
-        onClick={abrir}
-        tabIndex={visible ? 0 : -1}
-        className="mx-auto flex w-full max-w-xl items-center justify-between rounded-lg bg-navidad px-4 py-3.5 font-extrabold text-white shadow-[3px_3px_0_var(--color-navidad-osc)] transition active:translate-y-px active:shadow-[1px_1px_0_var(--color-navidad-osc)]"
-      >
-        <span className="flex items-center gap-2">
-          <span key={cuenta} className="saltar inline-grid h-7 min-w-7 place-items-center rounded-full bg-maiz px-1.5 text-sm text-navidad">
-            {cuenta}
-          </span>
-          Ver pedido
-        </span>
-        <span className="tabular">{pesos(total)}</span>
-      </button>
-    </div>
+      <span key={cuenta} className="n ne-salta">
+        {cuenta}
+      </span>
+      <span className="txt">
+        <b>Ver pedido</b>
+        <small>
+          {cuenta} {cuenta === 1 ? "producto" : "productos"}
+        </small>
+      </span>
+      <span className="ir tabular">
+        {pesos(total)}
+        <Flecha />
+      </span>
+    </button>
   );
 }
 
-/** El ícono del carrito del encabezado, con el número que salta al agregar. */
+/** El carrito del encabezado, con el número que salta al agregar. */
 export function IconoCarrito() {
-  const { cuenta, abrir } = useCarrito();
+  const { cuenta, total, abrir } = useCarrito();
   return (
     <button
       type="button"
       onClick={abrir}
+      data-carro
       aria-label={cuenta ? `Ver pedido: ${cuenta} productos` : "Ver pedido"}
-      className="carton-chico relative grid h-10 w-10 place-items-center rounded-lg text-cafe transition active:scale-90"
+      className="ne-boton-ico ne-carro"
     >
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6" />
-        <circle cx="10" cy="20.5" r="1" />
-        <circle cx="17" cy="20.5" r="1" />
-      </svg>
+      <Carro />
+      <span className="etq">
+        <small>Tu pedido</small>
+        <b>{pesos(total)}</b>
+      </span>
       {cuenta > 0 && (
-        <span key={cuenta} className="saltar absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-navidad px-1 text-[11px] font-bold text-white">
+        <span key={cuenta} className="num ne-salta">
           {cuenta}
         </span>
       )}
@@ -199,56 +270,34 @@ export function IconoCarrito() {
   );
 }
 
-// --- El botón «+» de las tarjetas ------------------------------------------
+// --- El botón «Agregar» de las tarjetas ---------------------------------------
 
-export function BotonAgregar({
-  articulo,
-  agotado,
-  grande = false,
-}: {
-  articulo: Articulo;
-  agotado?: boolean;
-  grande?: boolean;
-}) {
+export function BotonAgregar({ articulo, agotado }: { articulo: Articulo; agotado?: boolean }) {
   const { cantidad, agregar, cambiar } = useCarrito();
   const n = cantidad(articulo.tipo, articulo.id);
-  const alto = grande ? "h-12" : "h-9";
-  if (agotado) return null;
+  if (agotado) return <span className="ne-agotado">Agotado por ahora</span>;
 
   if (n === 0) {
     return (
       <button
         type="button"
-        onClick={() => agregar(articulo)}
+        onClick={(e) => agregar(articulo, 1, e.currentTarget)}
         aria-label={`Agregar ${articulo.nombre}`}
-        className={`${alto} ${grande ? "px-5 text-base" : "w-9 text-xl"} grid place-items-center rounded-md bg-pino font-extrabold text-maiz shadow-[2px_2px_0_var(--color-pino-osc)] transition active:translate-y-px active:shadow-none`}
+        className="ne-agregar"
       >
-        {grande ? "Agregar" : "+"}
+        <Mas />
+        {articulo.tipo === "COMBO" ? "Agregar combo" : "Agregar"}
       </button>
     );
   }
   return (
-    <div
-      className={`${alto} pop flex items-center rounded-md bg-pino font-extrabold text-maiz shadow-[2px_2px_0_var(--color-pino-osc)]`}
-    >
-      <button
-        type="button"
-        onClick={() => cambiar(articulo.tipo, articulo.id, -1)}
-        aria-label={`Quitar un ${articulo.nombre}`}
-        className="h-full w-9 text-xl active:scale-90"
-      >
-        −
+    <div className="ne-paso">
+      <button type="button" onClick={() => cambiar(articulo.tipo, articulo.id, -1)} aria-label={`Quitar un ${articulo.nombre}`}>
+        <Menos />
       </button>
-      <span className="tabular min-w-5 text-center text-sm" aria-live="polite">
-        {n}
-      </span>
-      <button
-        type="button"
-        onClick={() => agregar(articulo)}
-        aria-label={`Agregar otro ${articulo.nombre}`}
-        className="h-full w-9 text-xl active:scale-90"
-      >
-        +
+      <span aria-live="polite">{n}</span>
+      <button type="button" onClick={(e) => agregar(articulo, 1, e.currentTarget)} aria-label={`Agregar otro ${articulo.nombre}`}>
+        <Mas />
       </button>
     </div>
   );
@@ -260,23 +309,18 @@ function PreguntaEdad({ responder }: { responder: (mayor: boolean) => void }) {
   const si = useRef<HTMLButtonElement>(null);
   useEffect(() => si.current?.focus(), []);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-cafe/55 p-6" role="dialog" aria-modal aria-labelledby="titulo-edad">
-      <div className="pop w-full max-w-xs rounded-lg bg-carton p-5 text-center shadow-[4px_4px_0_#c9b38a]">
-        <h2 id="titulo-edad" className="text-lg font-black uppercase">
-          ¿Eres mayor de edad?
-        </h2>
-        <p className="mt-1 text-sm text-cafe-suave">Para pedir licores tienes que tener 18 años o más.</p>
-        <button
-          ref={si}
-          type="button"
-          onClick={() => responder(true)}
-          className="mt-4 w-full rounded-md bg-navidad py-3 font-bold text-white"
-        >
+    <div className="ne-modal" role="dialog" aria-modal aria-labelledby="titulo-edad">
+      <div className="caja">
+        <div className="ne-sello tubo neon-a">+18</div>
+        <h2 id="titulo-edad">¿Eres mayor de edad?</h2>
+        <p>Para pedir licores tienes que tener 18 años o más.</p>
+        <button ref={si} type="button" onClick={() => responder(true)} className="si">
           Sí, tengo 18 o más
         </button>
-        <button type="button" onClick={() => responder(false)} className="mt-2 w-full rounded-md bg-papel py-3 font-bold">
-          No
+        <button type="button" onClick={() => responder(false)} className="no">
+          No, todavía no
         </button>
+        <small>Solo te lo preguntamos una vez.</small>
       </div>
     </div>
   );
@@ -288,7 +332,7 @@ type Entrega = "DOMICILIO" | "RECOGER";
 type Pago = "EFECTIVO" | "TRANSFERENCIA";
 
 function HojaPedido({ tienda, cerrar }: { tienda: DatosTienda; cerrar: () => void }) {
-  const { lineas, total, cambiar, sincronizar } = useCarrito();
+  const { lineas, total, cuenta, cambiar, sincronizar } = useCarrito();
   const guardados = leer(LLAVE_DATOS, { nombre: "", direccion: "", entrega: "DOMICILIO" as Entrega });
   const [entrega, setEntrega] = useState<Entrega>(guardados.entrega);
   const [pago, setPago] = useState<Pago>("EFECTIVO");
@@ -299,9 +343,11 @@ function HojaPedido({ tienda, cerrar }: { tienda: DatosTienda; cerrar: () => voi
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const revisado = useRef(false);
+  const botonCerrar = useRef<HTMLButtonElement>(null);
 
   // Cerrar con Escape, y no dejar que la página de atrás se mueva.
   useEffect(() => {
+    botonCerrar.current?.focus({ preventScroll: true });
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
     document.addEventListener("keydown", tecla);
     const antes = document.body.style.overflow;
@@ -352,143 +398,156 @@ function HojaPedido({ tienda, cerrar }: { tienda: DatosTienda; cerrar: () => voi
   }
 
   return (
-    <div className="fixed inset-0 z-40" role="dialog" aria-modal aria-labelledby="titulo-pedido">
-      <button type="button" aria-label="Cerrar el pedido" onClick={cerrar} className="aparecer absolute inset-0 bg-cafe/45" />
-      <section className="subir absolute inset-x-0 bottom-0 mx-auto max-h-[92dvh] max-w-xl overflow-y-auto rounded-t-xl bg-papel px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2 text-cafe">
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-cafe/30" />
-        <div className="flex items-baseline justify-between">
-          <h2 id="titulo-pedido" className="text-xl font-black uppercase">
+    <div className="ne-capa" role="dialog" aria-modal aria-labelledby="titulo-pedido">
+      <button type="button" aria-label="Cerrar el pedido" onClick={cerrar} className="ne-velo" tabIndex={-1} />
+      <section className="ne-hoja">
+        <div className="ne-asa" />
+        <div className="ne-hoja-cab">
+          <h2 id="titulo-pedido" className="neon-a">
             Tu pedido
+            {cuenta > 0 && (
+              <small>
+                · {cuenta} {cuenta === 1 ? "producto" : "productos"}
+              </small>
+            )}
           </h2>
-          <button type="button" onClick={cerrar} className="font-mano text-lg text-navidad">
-            Seguir comprando
+          <button ref={botonCerrar} type="button" onClick={cerrar} className="ne-cerrar" aria-label="Seguir comprando">
+            <Cerrar />
           </button>
         </div>
-        <p className="font-mano text-base text-cafe-suave">Revisa y te lo confirmamos por WhatsApp</p>
 
-        {lineas.length === 0 ? (
-          <p className="mt-6 rounded-md bg-carton p-6 text-center text-cafe-suave">Todavía no has agregado nada.</p>
-        ) : (
-          <div className="recibo mt-3 rounded px-3 pb-1 pt-2">
-            {lineas.map((l) => (
-              <div key={`${l.tipo}-${l.id}`} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-b-[1.5px] border-dashed border-raya py-2.5 last:border-0">
-                <span className="text-sm leading-tight">
+        <div className="ne-cuerpo">
+          {lineas.length === 0 ? (
+            <div className="ne-vacio">
+              <b>Tu pedido está vacío</b>
+              Agrega algo de la tienda y aquí lo verás.
+            </div>
+          ) : (
+            lineas.map((l) => (
+              <div key={`${l.tipo}-${l.id}`} className={`ne-linea${l.icono ? " con-mini" : ""}`}>
+                {l.icono && <Miniatura p={{ nombre: l.nombre, icono: l.icono, presentacion: l.presentacion }} id={`h${l.tipo[0]}${l.id}`} />}
+                <span className="nombre">
                   {l.nombre}
-                  {l.presentacion && <span className="block text-xs text-cafe-suave">{l.presentacion}</span>}
+                  <small>
+                    {l.presentacion ? `${l.presentacion} · ` : ""}
+                    {pesos(l.precio)} c/u
+                  </small>
                 </span>
-                <span className="tabular text-right text-sm font-extrabold">{pesos(l.precio * l.cantidad)}</span>
-                <span className="flex items-center gap-1">
-                  <button type="button" onClick={() => cambiar(l.tipo, l.id, -1)} aria-label={`Quitar un ${l.nombre}`} className="h-8 w-8 rounded bg-papel font-extrabold active:scale-90">
-                    −
+                <span className="tot">{pesos(l.precio * l.cantidad)}</span>
+                <div className="ne-paso">
+                  <button type="button" onClick={() => cambiar(l.tipo, l.id, -1)} aria-label={`Quitar un ${l.nombre}`}>
+                    <Menos />
                   </button>
-                  <span className="tabular min-w-6 text-center font-bold">{l.cantidad}</span>
-                  <button type="button" onClick={() => cambiar(l.tipo, l.id, 1)} aria-label={`Agregar otro ${l.nombre}`} className="h-8 w-8 rounded bg-papel font-extrabold active:scale-90">
-                    +
+                  <span aria-live="polite">{l.cantidad}</span>
+                  <button type="button" onClick={() => cambiar(l.tipo, l.id, 1)} aria-label={`Agregar otro ${l.nombre}`}>
+                    <Mas />
                   </button>
-                </span>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
 
-        <div className="mt-5 flex items-baseline justify-between px-1 font-black uppercase">
-          <span>Total</span>
-          <span className="etiqueta-precio text-2xl">{pesos(total)}</span>
-        </div>
+          {avisos.length > 0 && (
+            <ul className="ne-avisos" role="status">
+              {avisos.map((a) => (
+                <li key={a}>⚠ {a}</li>
+              ))}
+              <li>Revisa y vuelve a tocar «Pedir por WhatsApp».</li>
+            </ul>
+          )}
 
-        {avisos.length > 0 && (
-          <ul className="mt-3 space-y-1 rounded-md border-2 border-dashed border-navidad/60 bg-carton p-3 text-sm" role="status">
-            {avisos.map((a) => (
-              <li key={a}>⚠ {a}</li>
-            ))}
-            <li className="font-mano text-base text-cafe-suave">Revisa y vuelve a tocar «Pedir por WhatsApp».</li>
-          </ul>
-        )}
-
-        <Segmentos
-          etiqueta="Entrega"
-          valor={entrega}
-          cambiar={setEntrega}
-          opciones={[
-            ["DOMICILIO", "Domicilio"],
-            ["RECOGER", "Paso a recoger"],
-          ]}
-        />
-
-        <label className="mt-1 block">
-          <span className="sr-only">Tu nombre</span>
-          <input
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder="Tu nombre"
-            autoComplete="name"
-            maxLength={60}
-            className="w-full rounded-md border-[1.5px] border-sombra bg-white px-3 py-3 text-cafe"
-          />
-        </label>
-        {entrega === "DOMICILIO" ? (
-          <>
-            <label className="mt-2 block">
-              <span className="sr-only">Dirección y barrio</span>
-              <input
-                value={direccion}
-                onChange={(e) => setDireccion(e.target.value)}
-                placeholder="Dirección y barrio"
-                autoComplete="street-address"
-                maxLength={200}
-                className="w-full rounded-md border-[1.5px] border-sombra bg-white px-3 py-3 text-cafe"
-              />
-            </label>
-            <p className="mt-1 font-mano text-base text-cafe-suave">
-              {tienda.valorDomicilio !== null
-                ? `Domicilio: ${pesos(tienda.valorDomicilio)}`
-                : "El valor del domicilio te lo decimos por WhatsApp."}
-            </p>
-          </>
-        ) : (
-          <p className="mt-2 font-mano text-base text-cafe-suave">Te avisamos cuando esté listo. {tienda.direccion}.</p>
-        )}
-        <label className="mt-2 block">
-          <span className="sr-only">Nota</span>
-          <input
-            value={nota}
-            onChange={(e) => setNota(e.target.value)}
-            placeholder="Nota (opcional): «bien fría», «timbre dañado»…"
-            maxLength={300}
-            className="w-full rounded-md border-[1.5px] border-sombra bg-white px-3 py-3 text-cafe"
-          />
-        </label>
-
-        {tienda.aceptaTransferencia && (
+          <span className="ne-rotulo">¿Cómo lo recibes?</span>
           <Segmentos
-            etiqueta="Pago"
-            valor={pago}
-            cambiar={setPago}
+            etiqueta="Entrega"
+            valor={entrega}
+            cambiar={setEntrega}
             opciones={[
-              ["EFECTIVO", "Efectivo"],
-              ["TRANSFERENCIA", "Nequi / transferencia"],
+              ["DOMICILIO", "Domicilio", <Moto key="m" />],
+              ["RECOGER", "Paso a recoger", <Casa key="c" />],
             ]}
           />
-        )}
 
-        {error && (
-          <p role="alert" className="mt-3 rounded-md bg-navidad/10 px-3 py-2 text-sm font-semibold text-navidad-osc">
-            {error}
+          <label className="block">
+            <span className="sr-only">Tu nombre</span>
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={60} className="ne-campo" />
+          </label>
+          {entrega === "DOMICILIO" ? (
+            <>
+              <label className="block">
+                <span className="sr-only">Dirección y barrio</span>
+                <input
+                  value={direccion}
+                  onChange={(e) => setDireccion(e.target.value)}
+                  placeholder="Dirección y barrio"
+                  autoComplete="street-address"
+                  maxLength={200}
+                  className="ne-campo"
+                />
+              </label>
+            </>
+          ) : (
+            <p className="ne-nota">Te avisamos cuando esté listo. {tienda.direccion}.</p>
+          )}
+          <label className="block">
+            <span className="sr-only">Nota</span>
+            <input
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              placeholder="Nota (opcional): «bien fría», «timbre dañado»…"
+              maxLength={300}
+              className="ne-campo"
+            />
+          </label>
+
+          {tienda.aceptaTransferencia && (
+            <>
+              <span className="ne-rotulo">¿Cómo pagas?</span>
+              <Segmentos
+                etiqueta="Pago"
+                valor={pago}
+                cambiar={setPago}
+                opciones={[
+                  ["EFECTIVO", "Efectivo", <Billete key="b" />],
+                  ["TRANSFERENCIA", "Nequi o transf.", <Chat key="c" />],
+                ]}
+              />
+            </>
+          )}
+
+          <div className="ne-resumen">
+            <div>
+              <span>Productos</span>
+              <span>{pesos(total)}</span>
+            </div>
+            {entrega === "DOMICILIO" && (
+              <div>
+                <span>Domicilio</span>
+                <span>{tienda.valorDomicilio !== null ? pesos(tienda.valorDomicilio) : "Te lo confirmamos"}</span>
+              </div>
+            )}
+            <div className="total">
+              <span>Total</span>
+              <span className="neon-a">
+                {pesos(total + (entrega === "DOMICILIO" && tienda.valorDomicilio !== null ? tienda.valorDomicilio : 0))}
+              </span>
+            </div>
+          </div>
+
+          {error && (
+            <p role="alert" className="ne-error">
+              {error}
+            </p>
+          )}
+
+          <button type="button" onClick={pedir} disabled={enviando || lineas.length === 0} className="ne-wa">
+            <IconoWhatsApp />
+            {enviando ? "Armando el pedido…" : "Pedir por WhatsApp"}
+          </button>
+          <p className="ne-seguro">
+            <Candado />
+            Se abre WhatsApp con tu pedido escrito. Lo mandas tú y te respondemos.
           </p>
-        )}
-
-        <button
-          type="button"
-          onClick={pedir}
-          disabled={enviando || lineas.length === 0}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#25d366] py-3.5 text-base font-extrabold text-white shadow-[3px_3px_0_#178a42] transition active:translate-y-px active:shadow-none disabled:opacity-50"
-        >
-          <IconoWhatsApp />
-          {enviando ? "Armando el pedido…" : "Pedir por WhatsApp"}
-        </button>
-        <p className="mt-2 text-center text-xs text-cafe-suave">
-          Se abre WhatsApp con tu pedido escrito. Lo mandas tú y te respondemos.
-        </p>
+        </div>
       </section>
     </div>
   );
@@ -503,31 +562,17 @@ function Segmentos<T extends string>({
   etiqueta: string;
   valor: T;
   cambiar: (v: T) => void;
-  opciones: [T, string][];
+  opciones: [T, string, React.ReactNode][];
 }) {
   return (
-    <div role="radiogroup" aria-label={etiqueta} className="my-3 grid grid-cols-2 gap-1 rounded-md bg-carton p-1 shadow-[inset_0_0_0_1.5px_var(--color-sombra)]">
-      {opciones.map(([v, texto]) => (
-        <button
-          key={v}
-          type="button"
-          role="radio"
-          aria-checked={valor === v}
-          onClick={() => cambiar(v)}
-          className={`rounded py-2.5 text-sm font-bold transition ${valor === v ? "bg-pino text-maiz" : "text-cafe"}`}
-        >
+    <div role="radiogroup" aria-label={etiqueta} className="ne-seg">
+      {opciones.map(([v, texto, icono]) => (
+        <button key={v} type="button" role="radio" aria-checked={valor === v} onClick={() => cambiar(v)}>
+          {icono}
           {texto}
         </button>
       ))}
     </div>
-  );
-}
-
-export function IconoWhatsApp({ className = "h-5 w-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
-      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z" />
-    </svg>
   );
 }
 

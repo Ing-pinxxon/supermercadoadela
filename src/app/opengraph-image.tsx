@@ -19,26 +19,43 @@ export default function ImagenParaCompartir() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "70px 90px",
-          background: "#f3e9d6",
-          color: "#2b2118",
+          background: "#07070a",
+          backgroundImage:
+            "radial-gradient(circle at 78% 18%, rgba(62,199,255,.28), transparent 46%), radial-gradient(circle at 12% 92%, rgba(255,59,92,.26), transparent 44%), radial-gradient(circle at 90% 90%, rgba(255,225,77,.18), transparent 40%)",
+          color: "#f5f5f7",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ fontSize: 150, fontWeight: 900, color: "#c0392b", letterSpacing: -4, lineHeight: 1 }}>ADELA</div>
-        <div style={{ fontSize: 46, color: "#6f5f4b", marginTop: 6 }}>su tienda de siempre</div>
-        <div style={{ fontSize: 44, fontWeight: 800, marginTop: 50 }}>Licores y mercado a domicilio</div>
-        <div style={{ fontSize: 36, marginTop: 8 }}>San Inés Sur · Bogotá</div>
+        <div
+          style={{
+            fontSize: 160,
+            fontWeight: 900,
+            color: "#fff8d6",
+            letterSpacing: -2,
+            lineHeight: 1,
+            textShadow: "0 0 10px #ffe14d, 0 0 28px #ffcc00, 0 0 60px rgba(255,170,0,.6)",
+          }}
+        >
+          ADELA
+        </div>
+        <div style={{ fontSize: 34, color: "#bfeeff", marginTop: 12, letterSpacing: 6, textShadow: "0 0 14px #3ec7ff" }}>
+          TU TIENDA Y LICORERA DE CONFIANZA
+        </div>
+        <div style={{ fontSize: 50, fontWeight: 800, marginTop: 54 }}>Licores y mercado a domicilio</div>
+        <div style={{ fontSize: 36, marginTop: 8, color: "#babdc7" }}>San Inés Sur · Bogotá</div>
         <div
           style={{
             display: "flex",
             alignSelf: "flex-start",
             marginTop: 44,
-            padding: "10px 28px",
-            background: "#ffe08a",
-            color: "#c0392b",
+            padding: "12px 30px",
+            border: "3px solid #8dffc0",
+            borderRadius: 18,
+            color: "#e3ffef",
             fontSize: 40,
             fontWeight: 800,
-            transform: "rotate(-3deg)",
+            boxShadow: "0 0 18px #39ff88",
+            textShadow: "0 0 12px #39ff88",
           }}
         >
           Pide por WhatsApp

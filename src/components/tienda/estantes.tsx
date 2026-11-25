@@ -1,45 +1,56 @@
 import Link from "next/link";
 import type { CategoriaVista } from "@/lib/api-catalogo";
-import { Dibujo } from "@/components/tienda/dibujos";
+import { COLORES_NEON, Estrella, Flecha, HEX_NEON, IconoNeon } from "@/components/tienda/iconos-neon";
 
-/** Las categorías como estantes con dibujo, en una fila que se desliza. */
-export function Estantes({ categorias, activa }: { categorias: CategoriaVista[]; activa?: string }) {
-  const todos = [{ slug: "", nombre: "Todo", icono: "todo" }, ...categorias];
+/**
+ * Los estantes de la tienda como tarjetas de neón: cada uno con su color, su
+ * ícono de tubo y «Ver todo». En el celular se deslizan; en el computador van
+ * en filas de cuatro.
+ */
+export function Categorias({ categorias, activa }: { categorias: CategoriaVista[]; activa?: string }) {
   return (
-    <nav aria-label="Categorías" className="tira px-4 pb-3 pt-1">
-      {todos.map((c) => {
-        const on = (activa ?? "") === c.slug;
-        return (
-          <Link
-            key={c.slug || "todo"}
-            href={c.slug ? `/c/${c.slug}` : "/"}
-            aria-current={on ? "page" : undefined}
-            className="flex w-[4.25rem] flex-col items-center gap-1 text-center text-[11px] font-bold leading-tight transition active:scale-95"
-          >
-            <span
-              className={`grid h-14 w-14 place-items-center rounded-lg ${
-                on ? "bg-maiz shadow-[2px_2px_0_var(--color-maiz-osc)]" : "carton-chico"
-              }`}
-            >
-              <Dibujo icono={c.icono} className="h-9 w-auto" />
-            </span>
-            {c.nombre}
-          </Link>
-        );
-      })}
+    <nav aria-label="Categorías" className="ne-cats">
+      {categorias.map((c, i) => (
+        <Link
+          key={c.slug}
+          href={`/c/${c.slug}`}
+          className="ne-cat tubo"
+          aria-current={activa === c.slug ? "page" : undefined}
+          style={{ ["--c" as string]: COLORES_NEON[i % COLORES_NEON.length] }}
+          prefetch={false}
+        >
+          <b>{c.nombre}</b>
+          <small>
+            Ver todo <Flecha />
+          </small>
+          <IconoNeon icono={c.icono} color={HEX_NEON[i % HEX_NEON.length]} />
+        </Link>
+      ))}
     </nav>
   );
 }
 
-export function TituloSeccion({ titulo, href }: { titulo: string; href?: string }) {
+/** Título de sección: antetítulo dorado, el título y la línea con la estrella. */
+export function TituloSeccion({
+  ceja,
+  titulo,
+  texto,
+  nivel = 2,
+}: {
+  ceja?: string;
+  titulo: string;
+  texto?: string | null;
+  nivel?: 1 | 2;
+}) {
+  const H = nivel === 1 ? "h1" : "h2";
   return (
-    <div className="flex items-baseline justify-between px-4 pt-2">
-      <h2 className="text-[15px] font-black uppercase">{titulo}</h2>
-      {href && (
-        <Link href={href} className="font-mano text-[15px] text-navidad">
-          Ver todo
-        </Link>
-      )}
+    <div className="ne-titulo">
+      {ceja && <span className="ceja">{ceja}</span>}
+      <H>{titulo}</H>
+      <div className="ne-adorno">
+        <Estrella />
+      </div>
+      {texto && <p>{texto}</p>}
     </div>
   );
 }

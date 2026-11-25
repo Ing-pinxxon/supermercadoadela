@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { api, ErrorCatalogo } from "@/lib/api-catalogo";
 import { pesos } from "@/lib/dinero";
 import { LEYENDAS_LICOR, leerPublico } from "@/lib/tienda-publica";
-import { Estado, Foto, Tarjeta } from "@/components/tienda/tarjeta";
+import { Estado, Precio, Tarjeta, colorDe } from "@/components/tienda/tarjeta";
 import { TituloSeccion } from "@/components/tienda/estantes";
 import { BarraAgregar } from "@/components/tienda/barra-agregar";
+import { Vitrina } from "@/components/tienda/vitrina";
+import { Flecha } from "@/components/tienda/iconos-neon";
 import { JsonLd, datosProducto } from "@/components/tienda/json-ld";
 
 export const revalidate = 300;
@@ -57,62 +59,73 @@ export default async function Producto({ params }: { params: Promise<{ slug: str
   const pastillas = [
     detalle.grados !== null ? `${String(detalle.grados).replace(".", ",")} % alcohol` : null,
     detalle.origen,
-    agotado ? "Agotado" : p.disponibilidad === "ULTIMAS" ? "Últimas unidades" : "Disponible",
   ].filter(Boolean) as string[];
+  const estado = agotado ? ["ag", "Agotado por ahora"] : p.disponibilidad === "ULTIMAS" ? ["ul", "Quedan pocas"] : ["si", "Disponible"];
 
   return (
     <>
       <JsonLd datos={datosProducto(detalle, tienda)} />
-      <nav className="px-4 py-2.5 text-[13px] font-bold">
-        <Link href={`/c/${p.categoriaSlug}`}>← {p.categoria}</Link>
-      </nav>
+      <Link href={`/c/${p.categoriaSlug}`} className="ne-miga" prefetch={false}>
+        <Flecha /> {p.categoria}
+      </Link>
 
-      <div className={`carton relative mx-4 grid aspect-square max-w-full place-items-center rounded-md ${agotado ? "opacity-60 grayscale" : ""}`}>
-        <Foto p={p} sizes="(max-width: 640px) 100vw, 560px" prioridad />
-        <Estado p={p} />
-      </div>
-
-      <div className="px-4 pt-4">
-        <h1 className="text-[22px] font-black uppercase leading-[1.05] [text-wrap:balance]">{p.nombre}</h1>
-        {p.presentacion && <p className="mt-0.5 text-sm text-cafe-suave">{p.presentacion}</p>}
-        <div className="mt-3 flex items-baseline gap-3">
-          <span className="etiqueta-precio text-3xl">{pesos(p.precio)}</span>
-          {p.precioAntes && <span className="text-sm text-cafe-suave line-through">Antes {pesos(p.precioAntes)}</span>}
+      <article className={`ne-ficha${agotado ? " agotado" : ""}`} style={{ ["--acento" as string]: colorDe(p.id) }}>
+        <div className="ne-ficha-foto">
+          <Estado p={p} />
+          <Vitrina p={p} id={`f${p.id}`} sizes="(max-width: 900px) 100vw, 560px" prioridad />
         </div>
-        {detalle.descripcion && <p className="mt-3 leading-relaxed text-[#4d4033]">{detalle.descripcion}</p>}
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {pastillas.map((t) => (
-            <span key={t} className="rounded bg-carton px-2.5 py-1 text-xs font-semibold shadow-[inset_0_0_0_1.5px_var(--color-sombra)]">
-              {t}
+        <div className="ne-info">
+          <Link href={`/c/${p.categoriaSlug}`} className="tipo" prefetch={false}>
+            {p.categoria}
+          </Link>
+          <h1>{p.nombre}</h1>
+          {p.presentacion && <span className="ne-pres">{p.presentacion}</span>}
+          {detalle.descripcion && <p className="desc">{detalle.descripcion}</p>}
+          <div className="ne-fila-p">
+            <div>
+              <Precio valor={p.precio} />
+              {p.precioAntes && (
+                <div className="ne-antes">
+                  Antes <s>{pesos(p.precioAntes)}</s> · <b>Ahorras {pesos(p.precioAntes - p.precio)}</b>
+                </div>
+              )}
+            </div>
+            <span className={`ne-estado ${estado[0]}`}>
+              <i />
+              {estado[1]}
             </span>
-          ))}
+          </div>
+          {pastillas.length > 0 && (
+            <div className="ne-pastillas">
+              {pastillas.map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+          )}
+          {p.esLicor && (
+            <p className="ne-nota-licor">
+              Venta solo a mayores de 18 años. {LEYENDAS_LICOR.join(" ")}
+            </p>
+          )}
         </div>
-      </div>
+      </article>
 
       {detalle.relacionados.length > 0 && (
-        <>
-          <div className="pt-4">
-            <TituloSeccion titulo="Va bien con…" />
+        <section className="ne-seccion">
+          <div className="ne-ancho">
+            <TituloSeccion ceja="Para acompañar" titulo="Va bien con…" />
+            <div className="ne-tira">
+              {detalle.relacionados.map((r, i) => (
+                <Tarjeta key={r.id} p={r} i={i} />
+              ))}
+            </div>
           </div>
-          <div className="tira px-4 pb-4 pt-2.5">
-            {detalle.relacionados.map((r) => (
-              <Tarjeta key={r.id} p={r} ancho="tira" />
-            ))}
-          </div>
-        </>
-      )}
-
-      {p.esLicor && (
-        <div className="px-4 pb-2 pt-2 text-[11px] text-cafe-suave">
-          {LEYENDAS_LICOR.map((l) => (
-            <p key={l}>{l}</p>
-          ))}
-        </div>
+        </section>
       )}
 
       <BarraAgregar
         agotado={agotado}
-        articulo={{ tipo: "PRODUCTO", id: p.id, nombre: p.nombre, presentacion: p.presentacion, precio: p.precio, esLicor: p.esLicor }}
+        articulo={{ tipo: "PRODUCTO", id: p.id, nombre: p.nombre, presentacion: p.presentacion, precio: p.precio, esLicor: p.esLicor, icono: p.icono }}
       />
     </>
   );

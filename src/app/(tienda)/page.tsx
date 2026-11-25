@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { api } from "@/lib/api-catalogo";
 import { enlaceWhatsApp, leerPublico } from "@/lib/tienda-publica";
-import { Estantes, TituloSeccion } from "@/components/tienda/estantes";
+import { Categorias, TituloSeccion } from "@/components/tienda/estantes";
 import { Tarjeta } from "@/components/tienda/tarjeta";
 import { TarjetaCombo } from "@/components/tienda/combo";
-import { IconoWhatsApp } from "@/components/tienda/carrito";
+import { Confianza, Portada } from "@/components/tienda/portada";
+import { IconoWhatsApp } from "@/components/tienda/iconos-neon";
+import { PuntosCombos } from "@/components/tienda/puntos-combos";
 import { JsonLd, datosNegocio } from "@/components/tienda/json-ld";
 
 // Cada cinco minutos se vuelve a leer la API; editar algo la refresca al instante.
@@ -29,91 +31,90 @@ export default async function Inicio() {
   const [tienda, { categorias, combos }] = datos;
 
   const todos = categorias.flatMap((c) => c.productos);
-  const destacados = todos.filter((p) => p.destacado);
-  const masPedido = (destacados.length > 0 ? destacados : todos).slice(0, 10);
-  const ofertas = todos.filter((p) => p.precioAntes);
-  const combo = combos.find((c) => c.deLaSemana) ?? combos[0];
+  const disponibles = todos.filter((p) => p.disponibilidad !== "AGOTADO");
+  const destacados = disponibles.filter((p) => p.destacado);
+  const masPedido = (destacados.length >= 4 ? destacados : [...destacados, ...disponibles.filter((p) => !p.destacado)]).slice(0, 8);
+  const ofertas = disponibles.filter((p) => p.precioAntes);
+  const ordenCombos = [...combos].sort((a, b) => Number(b.deLaSemana) - Number(a.deLaSemana));
+  const lugar = [tienda.barrio, tienda.ciudad].filter(Boolean).join(", ");
 
   return (
     <>
       <JsonLd datos={datosNegocio(tienda)} />
+      <h1 className="sr-only">
+        {tienda.nombre}: licores y mercado a domicilio en {lugar}
+      </h1>
 
-      {tienda.temporada && tienda.bannerTitulo && (
-        <section className="rayado relative mx-4 my-3 overflow-hidden rounded-md bg-pino p-4 text-[#f6edd8] shadow-[3px_3px_0_#c9b38a]">
-          <h1 className="text-xl font-black uppercase leading-none text-maiz [text-wrap:balance]">{tienda.bannerTitulo}</h1>
-          {tienda.bannerTexto && <p className="mt-1 max-w-[78%] font-mano text-base leading-snug">{tienda.bannerTexto}</p>}
-          {tienda.bannerSello && (
-            <span className="absolute bottom-2.5 right-3 grid h-16 w-16 -rotate-12 place-items-center rounded-full border-2 border-dashed border-maiz p-1 text-center font-mano text-[10.5px] font-bold leading-none text-maiz">
-              {tienda.bannerSello}
-            </span>
-          )}
+      <Portada tienda={tienda} combo={ordenCombos[0]} />
+      <Confianza tienda={tienda} />
+
+      {categorias.length > 0 && (
+        <section className="ne-seccion">
+          <div className="ne-ancho">
+            <TituloSeccion ceja={tienda.temporada ? "Para la temporada" : "Todo lo que hay"} titulo="Categorías" />
+            <Categorias categorias={categorias} />
+          </div>
         </section>
       )}
-      {!(tienda.temporada && tienda.bannerTitulo) && (
-        <h1 className="sr-only">{tienda.nombre}: licores y mercado a domicilio</h1>
-      )}
-
-      <Estantes categorias={categorias} />
 
       {todos.length === 0 && (
-        <p className="mx-4 mt-6 rounded-md bg-carton p-6 text-center font-mano text-lg text-cafe-suave">
-          Estamos surtiendo los estantes. Mientras tanto, pídenos lo que necesites por WhatsApp.
-        </p>
+        <section className="ne-seccion">
+          <div className="ne-ancho ne-vacio">
+            <b>Estamos surtiendo los estantes</b>
+            Mientras tanto, pídenos lo que necesites por WhatsApp.
+          </div>
+        </section>
       )}
 
       {masPedido.length > 0 && (
-        <>
-          <TituloSeccion titulo="Lo más pedido" />
-          <div className="tira px-4 pb-4 pt-2.5">
-            {masPedido.map((p, i) => (
-              <Tarjeta key={p.id} p={p} ancho="tira" prioridad={i < 2} />
-            ))}
+        <section className="ne-seccion" id="mas-vendido">
+          <div className="ne-ancho">
+            <TituloSeccion ceja="Lo que más piden los vecinos" titulo="Lo más vendido" />
+            <div className="ne-grid">
+              {masPedido.map((p, i) => (
+                <Tarjeta key={p.id} p={p} i={i} prioridad={i < 2} />
+              ))}
+            </div>
           </div>
-        </>
+        </section>
       )}
 
-      {combo && (
-        <>
-          <TituloSeccion titulo={combo.deLaSemana ? "Combo de la semana" : "Combo"} />
-          <TarjetaCombo c={combo} />
-          {combos
-            .filter((c) => c.id !== combo.id)
-            .map((c) => (
-              <TarjetaCombo key={c.id} c={c} />
-            ))}
-        </>
+      {ordenCombos.length > 0 && (
+        <section className="ne-seccion" id="combos">
+          <div className="ne-ancho">
+            <TituloSeccion ceja="Ahorra en diciembre" titulo={ordenCombos.length > 1 ? "Combos de temporada" : "Combo de temporada"} />
+            <div className="ne-combos" data-combos>
+              {ordenCombos.map((c, i) => (
+                <TarjetaCombo key={c.id} c={c} i={i} productos={todos} />
+              ))}
+            </div>
+            {ordenCombos.length > 1 && <PuntosCombos cantidad={ordenCombos.length} />}
+            <small className="ne-vale">Hasta agotar existencias.</small>
+          </div>
+        </section>
       )}
 
       {ofertas.length > 0 && (
-        <>
-          <TituloSeccion titulo="Ofertas" />
-          <div className="tira px-4 pb-4 pt-2.5">
-            {ofertas.map((p) => (
-              <Tarjeta key={p.id} p={p} ancho="tira" />
-            ))}
-          </div>
-        </>
-      )}
-
-      {categorias.map((c) => (
-        <section key={c.slug}>
-          <TituloSeccion titulo={c.nombre} href={c.productos.length > 4 ? `/c/${c.slug}` : undefined} />
-          <div className="tira px-4 pb-4 pt-2.5">
-            {c.productos.slice(0, 10).map((p) => (
-              <Tarjeta key={p.id} p={p} ancho="tira" />
-            ))}
+        <section className="ne-seccion">
+          <div className="ne-ancho">
+            <TituloSeccion ceja="Mientras duren" titulo="Ofertas" />
+            <div className="ne-tira">
+              {ofertas.map((p, i) => (
+                <Tarjeta key={p.id} p={p} i={i} />
+              ))}
+            </div>
           </div>
         </section>
-      ))}
+      )}
 
-      <section className="mx-4 my-4 rounded-lg border-2 border-dashed border-navidad p-4 text-center">
-        <h2 className="font-black uppercase text-navidad">¿Pedido grande o para fiesta?</h2>
-        <p className="mb-3 mt-1 font-mano text-base leading-snug">
-          Escríbenos: despachamos fuera de horario y armamos el pedido completo.
-        </p>
+
+      <section className="ne-grande tubo">
+        <h2 className="neon-v">¿Pedido grande o para fiesta?</h2>
+        <p>Escríbenos: despachamos fuera de horario y armamos el pedido completo.</p>
         <a
-          href={enlaceWhatsApp(tienda, "Hola, Supermercado Adela. Quiero hacer un pedido grande para una reunión.")}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25d366] py-3 font-extrabold text-white shadow-[3px_3px_0_#178a42]"
+          href={enlaceWhatsApp(tienda, `Hola, ${tienda.nombre}. Quiero hacer un pedido grande para una reunión.`)}
+          className="ne-wa"
+          style={{ maxWidth: 380, margin: "0 auto" }}
         >
           <IconoWhatsApp /> Escribir por WhatsApp
         </a>

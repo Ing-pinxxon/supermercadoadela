@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { pesos } from "@/lib/dinero";
 import { sinTildes } from "@/lib/texto";
 import { BotonAgregar } from "@/components/tienda/carrito";
+import { Lupa } from "@/components/tienda/iconos-neon";
 
 export type Indice = {
   id: number;
@@ -15,23 +15,35 @@ export type Indice = {
   precio: number;
   esLicor: boolean;
   agotado: boolean;
+  icono: string;
 }[];
 
 /**
- * La barra «Busca aguardiente, hielo, buñuelos…». Busca en el celular, sin ir
- * al servidor, sobre la lista de todo lo publicado (es corta).
+ * La barra «Busca aguardiente, ron, hielo…». Busca en el celular, sin ir al
+ * servidor, sobre la lista de todo lo publicado (es corta).
+ *
+ * `abrirDesde` lo usa la lupa del encabezado para abrirlo desde afuera.
  */
-export function Buscador({ indice }: { indice: Indice }) {
+export function Buscador({ indice, abrirDesde = 0 }: { indice: Indice; abrirDesde?: number }) {
   const [abierto, setAbierto] = useState(false);
   const [q, setQ] = useState("");
   const entrada = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (abrirDesde > 0) setAbierto(true);
+  }, [abrirDesde]);
 
   useEffect(() => {
     if (!abierto) return;
     entrada.current?.focus();
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && setAbierto(false);
     document.addEventListener("keydown", tecla);
-    return () => document.removeEventListener("keydown", tecla);
+    const antes = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", tecla);
+      document.body.style.overflow = antes;
+    };
   }, [abierto]);
 
   const resultados = useMemo(() => {
@@ -47,53 +59,49 @@ export function Buscador({ indice }: { indice: Indice }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAbierto(true)}
-        className="mt-2.5 flex w-full items-center gap-2 rounded-md bg-carton px-3 py-2.5 text-left text-sm text-cafe-suave shadow-[inset_0_0_0_1.5px_var(--color-sombra)]"
-      >
-        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-4-4" />
-        </svg>
-        Busca aguardiente, hielo, buñuelos…
+      <button type="button" onClick={() => setAbierto(true)} className="ne-buscar">
+        <Lupa />
+        <span>Busca aguardiente, ron, hielo…</span>
       </button>
 
       {abierto && (
-        <div className="fixed inset-0 z-40 flex flex-col bg-papel" role="dialog" aria-modal aria-label="Buscar">
-          <div className="flex items-center gap-2 border-b-2 border-dashed border-sombra p-3">
-            <input
-              ref={entrada}
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="¿Qué buscas?"
-              aria-label="Buscar productos"
-              className="min-w-0 flex-1 rounded-md border-[1.5px] border-sombra bg-white px-3 py-2.5 text-cafe"
-            />
-            <button type="button" onClick={() => setAbierto(false)} className="font-mano text-lg text-navidad">
-              Cerrar
+        <div className="ne-busqueda" role="dialog" aria-modal aria-label="Buscar">
+          <div className="arriba">
+            <label className="ne-buscar">
+              <Lupa />
+              <input
+                ref={entrada}
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="¿Qué buscas?"
+                aria-label="Buscar productos"
+              />
+            </label>
+            <button type="button" onClick={() => setAbierto(false)} className="ne-cerrar" aria-label="Cerrar la búsqueda">
+              ✕
             </button>
           </div>
-          <ul className="flex-1 overflow-y-auto px-3 pb-24">
+          <ul>
             {q && resultados.length === 0 && (
-              <li className="py-8 text-center font-mano text-lg text-cafe-suave">
-                No lo encontramos. Pregúntanos por WhatsApp: a lo mejor lo tenemos.
-              </li>
+              <li className="nada">No lo encontramos. Pregúntanos por WhatsApp: a lo mejor lo tenemos en la tienda.</li>
             )}
             {resultados.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 border-b border-dashed border-raya py-3">
-                <Link href={`/p/${p.slug}`} onClick={() => setAbierto(false)} className="min-w-0 flex-1">
-                  <span className="block font-bold leading-tight">{p.nombre}</span>
-                  <span className="text-xs text-cafe-suave">
-                    {[p.presentacion, p.categoria].filter(Boolean).join(" · ")}
-                  </span>
+              <li key={p.id}>
+                <Link href={`/p/${p.slug}`} onClick={() => setAbierto(false)}>
+                  <b>{p.nombre}</b>
+                  <small>{[p.presentacion, p.categoria].filter(Boolean).join(" · ")}</small>
                 </Link>
-                <span className="etiqueta-precio shrink-0 text-lg">{pesos(p.precio)}</span>
-                <BotonAgregar
-                  agotado={p.agotado}
-                  articulo={{ tipo: "PRODUCTO", id: p.id, nombre: p.nombre, presentacion: p.presentacion, precio: p.precio, esLicor: p.esLicor }}
-                />
+                <div className="ne-precio">
+                  <span className="mon">$</span>
+                  {p.precio.toLocaleString("es-CO")}
+                </div>
+                <div className="ne-control">
+                  <BotonAgregar
+                    agotado={p.agotado}
+                    articulo={{ tipo: "PRODUCTO", id: p.id, nombre: p.nombre, presentacion: p.presentacion, precio: p.precio, esLicor: p.esLicor, icono: p.icono }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -102,3 +110,4 @@ export function Buscador({ indice }: { indice: Indice }) {
     </>
   );
 }
+

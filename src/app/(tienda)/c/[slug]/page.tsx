@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { api, ErrorCatalogo } from "@/lib/api-catalogo";
 import { LEYENDAS_LICOR, leerPublico } from "@/lib/tienda-publica";
-import { Estantes } from "@/components/tienda/estantes";
+import { Categorias, TituloSeccion } from "@/components/tienda/estantes";
 import { Tarjeta } from "@/components/tienda/tarjeta";
 
 export const revalidate = 300;
@@ -45,29 +45,36 @@ export default async function Categoria({ params }: { params: Promise<{ slug: st
 
   return (
     <>
-      <Estantes categorias={categorias} activa={c.slug} />
-      <div className="px-4">
-        <h1 className="text-2xl font-black uppercase leading-none">{c.nombre}</h1>
-        {c.descripcion && <p className="mt-1 text-sm text-cafe-suave">{c.descripcion}</p>}
-      </div>
-      {c.productos.length === 0 ? (
-        <p className="mx-4 mt-6 rounded-md bg-carton p-6 text-center font-mano text-lg text-cafe-suave">
-          Por ahora no hay nada aquí. Pregúntanos por WhatsApp.
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 gap-2.5 px-4 pb-4 pt-3 sm:grid-cols-3">
-          {c.productos.map((p, i) => (
-            <Tarjeta key={p.id} p={p} prioridad={i < 4} />
-          ))}
+      <section className="ne-seccion" style={{ paddingTop: 26 }}>
+        <div className="ne-ancho">
+          <TituloSeccion nivel={1} ceja="Estante" titulo={c.nombre} texto={c.descripcion} />
+          {c.productos.length === 0 ? (
+            <div className="ne-vacio">
+              <b>Por ahora no hay nada aquí</b>
+              Pregúntanos por WhatsApp: a lo mejor lo tenemos en la tienda.
+            </div>
+          ) : (
+            <div className="ne-grid">
+              {c.productos.map((p, i) => (
+                <Tarjeta key={p.id} p={p} i={i} prioridad={i < 4} />
+              ))}
+            </div>
+          )}
+          {c.esLicor && (
+            <div className="ne-legal" style={{ borderTop: 0 }}>
+              {LEYENDAS_LICOR.map((l) => (
+                <p key={l}>{l}</p>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      {c.esLicor && (
-        <div className="px-4 pb-2 text-center text-[11px] text-cafe-suave">
-          {LEYENDAS_LICOR.map((l) => (
-            <p key={l}>{l}</p>
-          ))}
+      </section>
+      <section className="ne-seccion">
+        <div className="ne-ancho">
+          <TituloSeccion ceja="Sigue mirando" titulo="Otros estantes" />
+          <Categorias categorias={categorias} activa={c.slug} />
         </div>
-      )}
+      </section>
     </>
   );
 }

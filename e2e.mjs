@@ -411,7 +411,7 @@ if (!API) {
   const cliente = await browser.newPage({ viewport: { width: 390, height: 844 } });
   cliente.on("pageerror", (e) => errores.push(String(e)));
   let respuesta = await cliente.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  revisar("la tienda abre sin clave", respuesta.status() === 200 && (await cliente.textContent("body")).includes("su tienda de siempre"));
+  revisar("la tienda abre sin clave", respuesta.status() === 200 && (await cliente.textContent("body")).includes("Tu tienda y licorera de confianza"));
   await cliente.goto(`${BASE}/caja`, { waitUntil: "networkidle" });
   revisar("la caja sigue pidiendo clave", new URL(cliente.url()).pathname === "/entrar");
   const accion = await fetch(`${BASE}/`, { method: "POST", headers: { "Next-Action": "x" } });

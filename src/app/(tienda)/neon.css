@@ -1,0 +1,511 @@
+/*
+ * La tienda en línea con el estilo «neón navideño»: noche, letreros de neón de
+ * tubo, la calle de diciembre y botellas de vitrina.
+ *
+ * Todo va dentro de `.neon` (el contenedor de la tienda), para que no toque la
+ * administración. Las animaciones llevan el prefijo `ne-`.
+ */
+
+.neon {
+  --fondo: #07070a; --panel: #111116; --linea: rgba(255,255,255,.08); --linea2: rgba(255,255,255,.14);
+  --texto: #f5f5f7; --suave: #babdc7; --tenue: #8d909a;
+  --amarillo: #ffe14d; --azul: #3ec7ff; --dorado: #f5c451; --rojo: #ff3b5c; --verde: #25d366; --menta: #39ff88;
+  --cond: var(--font-barlow-cond), "Arial Narrow", sans-serif;
+  --sans: var(--font-barlow), system-ui, sans-serif;
+  --guion: var(--font-yellowtail), "Brush Script MT", cursive;
+  --salida: cubic-bezier(.22,1,.36,1);
+  --rebote: cubic-bezier(.34,1.56,.64,1);
+  min-height: 100vh; background: var(--fondo); color: var(--texto); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased; color-scheme: dark;
+}
+html:has(.neon) { background: #07070a; color-scheme: dark }
+.neon button, .neon input { font: inherit; color: inherit }
+.neon a { color: inherit }
+.neon :focus-visible { outline: 2px solid var(--azul); outline-offset: 2px }
+.neon .ne-ancho { max-width: 1120px; margin-inline: auto }
+.neon .tabular { font-variant-numeric: tabular-nums }
+
+/* --- Neón -------------------------------------------------------------------- */
+.neon .neon-a { color: #fff8d6; text-shadow: 0 0 1px #fff, 0 0 4px var(--amarillo), 0 0 11px #ffcc00, 0 0 24px rgba(255,196,0,.7), 0 0 48px rgba(255,170,0,.35) }
+.neon .neon-b { color: #e6f8ff; text-shadow: 0 0 1px #fff, 0 0 4px var(--azul), 0 0 11px #18b0ff, 0 0 24px rgba(24,160,255,.7), 0 0 46px rgba(24,150,255,.35) }
+.neon .neon-r { color: #ffe6eb; text-shadow: 0 0 1px #fff, 0 0 4px var(--rojo), 0 0 11px #ff1f4b, 0 0 24px rgba(255,31,75,.7), 0 0 46px rgba(255,31,75,.35) }
+.neon .neon-d { color: #fff3d6; text-shadow: 0 0 1px #fff, 0 0 4px var(--dorado), 0 0 11px #f0b429, 0 0 24px rgba(240,180,41,.65), 0 0 46px rgba(240,170,30,.3) }
+.neon .neon-v { color: #e3ffef; text-shadow: 0 0 1px #fff, 0 0 4px var(--menta), 0 0 11px #19e66e, 0 0 24px rgba(25,230,110,.6) }
+.neon .tubo { --c: var(--amarillo); border: 2px solid color-mix(in srgb, var(--c) 55%, #fff);
+  box-shadow: 0 0 6px var(--c), 0 0 18px color-mix(in srgb, var(--c) 50%, transparent), inset 0 0 6px color-mix(in srgb, var(--c) 60%, transparent), inset 0 0 20px color-mix(in srgb, var(--c) 16%, transparent) }
+@keyframes ne-encender { 0%, 6% { opacity: .06 } 7% { opacity: 1 } 10% { opacity: .15 } 13%, 20% { opacity: 1 } 22% { opacity: .3 } 26%, 100% { opacity: 1 } }
+.neon .encender { animation: ne-encender 1.7s linear both }
+.neon .encender.tarde { animation-delay: .35s }
+@keyframes ne-entra { from { transform: scale(.9); opacity: .4 } }
+@keyframes ne-salta { 30% { transform: scale(1.4) } }
+.neon .ne-salta { animation: ne-salta .5s var(--rebote) }
+
+/* --- Encabezado ---------------------------------------------------------------- */
+.neon .ne-cab { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: rgba(9,9,13,.78); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%) }
+.neon .ne-cab::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,225,77,.55), rgba(62,199,255,.55), transparent) }
+.neon .ne-espacio { height: var(--alto-cab, 188px) }
+.neon .ne-fila { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 8px; max-width: 1220px; margin-inline: auto; transition: padding .35s var(--salida) }
+.neon .ne-logo { position: relative; display: inline-flex; flex-direction: column; text-decoration: none; padding: 2px 0 0 6px; white-space: nowrap }
+.neon .ne-logo .nombre { font: 400 40px/.86 var(--guion); transition: font-size .35s var(--salida) }
+.neon .ne-logo .lema { font: 700 9.5px/1 var(--cond); letter-spacing: .17em; text-transform: uppercase; margin-top: 5px }
+.neon .ne-logo .gorro { position: absolute; left: -7px; top: -13px; width: 30px; transform: rotate(-24deg); filter: drop-shadow(0 0 4px rgba(255,59,92,.7)) }
+.neon .ne-cab.compacto .ne-fila { padding-top: 9px; padding-bottom: 6px }
+.neon .ne-cab.compacto .ne-logo .nombre { font-size: 32px }
+.neon .ne-acciones { display: flex; align-items: center; gap: 10px }
+.neon .ne-tel { display: none }
+.neon .ne-boton-ico { position: relative; height: 44px; min-width: 44px; padding: 0; border-radius: 14px; border: 1px solid var(--linea2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); transition: border-color .2s, box-shadow .2s; color: var(--texto) }
+.neon .ne-boton-ico:hover { border-color: rgba(255,225,77,.6); box-shadow: 0 0 18px -4px rgba(255,225,77,.6) }
+.neon .ne-boton-ico svg { width: 21px; height: 21px }
+.neon .ne-carro .etq { display: none }
+.neon .ne-carro .num { position: absolute; top: -7px; right: -7px; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 11px; background: var(--amarillo); color: #161200; font: 800 11.5px/21px var(--sans); text-align: center;
+  box-shadow: 0 0 0 2px #09090d, 0 0 12px rgba(255,225,77,.8) }
+.neon .ne-lupa { display: none; color: var(--azul) }
+.neon .ne-cab.escondido .ne-lupa { display: inline-flex; animation: ne-entra .35s var(--rebote) }
+.neon .ne-fila { flex-wrap: wrap }
+.neon .ne-busca-caja { order: 3; flex: 1 0 100%; min-width: 0 }
+.neon .ne-cab.escondido .ne-busca-caja { display: none }
+.neon .ne-buscar { display: flex; align-items: center; gap: 10px; width: 100%; height: 46px; margin: 4px 0 2px; padding: 0 16px; border-radius: 999px; text-align: left; cursor: text;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(62,199,255,.38); box-shadow: inset 0 0 16px -9px rgba(62,199,255,.95); color: var(--tenue); font-size: 15px; transition: box-shadow .25s, border-color .25s }
+.neon .ne-buscar:hover { border-color: rgba(62,199,255,.8); box-shadow: inset 0 0 16px -9px rgba(62,199,255,.95), 0 0 22px -6px rgba(62,199,255,.9) }
+.neon .ne-buscar svg { width: 18px; height: 18px; color: var(--azul); flex: none }
+.neon .ne-buscar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.neon .ne-plegable { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .45s var(--salida), opacity .3s }
+.neon .ne-plegable > div { overflow: hidden; min-height: 0 }
+.neon .ne-cab.escondido .ne-plegable { grid-template-rows: 0fr; opacity: 0; pointer-events: none }
+.neon .ne-chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 16px 12px; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent) }
+.neon .ne-chips::-webkit-scrollbar { display: none }
+.neon .ne-chip { flex: none; display: inline-flex; align-items: center; height: 40px; padding: 0 15px; border-radius: 999px; border: 1px solid var(--linea2); background: rgba(255,255,255,.03); color: #dcdde3; font: 600 13.5px var(--sans); white-space: nowrap; text-decoration: none; transition: background .2s, color .2s, box-shadow .2s }
+.neon .ne-chip[aria-current="page"] { background: var(--amarillo); color: #161200; border-color: transparent; box-shadow: 0 0 16px -3px rgba(255,225,77,.75) }
+.neon .ne-menu { display: none }
+
+/* --- Portada -------------------------------------------------------------------- */
+.neon .ne-portada { position: relative; height: 470px; overflow: hidden; isolation: isolate; background: #05071a }
+.neon .ne-calle { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: translateY(calc(var(--py, 0) * .25px)) scale(1.02); will-change: transform }
+.neon .ne-portada::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 38%, transparent 52%, rgba(0,0,0,.6) 100%), linear-gradient(180deg, rgba(7,7,10,.25) 0%, transparent 22%, transparent 62%, var(--fondo) 100%) }
+.neon .ne-bokeh { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden }
+.neon .ne-bokeh span { position: absolute; bottom: -40px; border-radius: 50%; background: radial-gradient(circle, var(--c) 0%, color-mix(in srgb, var(--c) 40%, transparent) 35%, transparent 70%); opacity: 0; animation: ne-flotar var(--dur) linear var(--del) infinite }
+@keyframes ne-flotar { 0% { transform: translate(0, 0); opacity: 0 } 15%, 80% { opacity: var(--o) } 100% { transform: translate(var(--x), -520px); opacity: 0 } }
+.neon .ne-abierto { --c: var(--menta); position: absolute; z-index: 4; top: 22px; right: 16px; padding: 5px 10px; border-radius: 9px; background: rgba(4,8,8,.72); text-align: center; line-height: 1 }
+.neon .ne-abierto.no { --c: var(--rojo) }
+.neon .ne-abierto::before, .neon .ne-abierto::after { content: ""; position: absolute; bottom: 100%; width: 1px; height: 22px; background: linear-gradient(transparent, #8a8a93) }
+.neon .ne-abierto::before { left: 12px } .neon .ne-abierto::after { right: 12px }
+.neon .ne-abierto b { display: block; font: 800 14px var(--cond); letter-spacing: .2em; text-transform: uppercase; padding-left: .2em }
+.neon .ne-abierto small { display: block; font: 600 9.5px var(--sans); color: var(--suave); margin-top: 3px }
+.neon .ne-hero { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 16px 46px; text-align: center;
+  transform: translateY(calc(var(--py, 0) * -.08px)) }
+.neon .ne-placa { position: relative; padding: 11px 18px 13px; border-radius: 18px; max-width: 100%;
+  background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.01) 60%), rgba(7,7,14,.42);
+  border: 1px solid rgba(255,255,255,.13); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 -1px 0 rgba(0,0,0,.5), 0 28px 60px -26px rgba(0,0,0,.95) }
+.neon .ne-placa > i { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3f3f6, #8a8a93 55%, #2e2e35); box-shadow: 0 1px 1px rgba(0,0,0,.7) }
+.neon .ne-placa > i:nth-of-type(1) { top: 9px; left: 9px } .neon .ne-placa > i:nth-of-type(2) { top: 9px; right: 9px }
+.neon .ne-placa > i:nth-of-type(3) { bottom: 9px; left: 9px } .neon .ne-placa > i:nth-of-type(4) { bottom: 9px; right: 9px }
+.neon .ne-placa .ceja { display: block; font: 700 11px var(--cond); letter-spacing: .26em; text-transform: uppercase; color: var(--dorado) }
+.neon .ne-placa h2 { margin: 2px 0 0; font-weight: 400 }
+.neon .ne-placa h2 .g { display: block; font: 400 36px/1 var(--guion); transform: rotate(-5deg) translateX(-12px); margin-bottom: -6px }
+.neon .ne-placa h2 .f { display: block; font: 800 60px/.86 var(--cond); text-transform: uppercase; letter-spacing: .02em }
+.neon .ne-placa p { margin: 6px 0 0; text-wrap: balance; font: 700 14px var(--cond); letter-spacing: .1em; text-transform: uppercase; color: #fff; text-shadow: 0 0 12px rgba(255,59,92,.6) }
+.neon .ne-cuenta { display: inline-flex; align-items: center; gap: 10px; min-height: 46px; padding: 5px 16px 5px 5px; border-radius: 999px; background: rgba(7,7,14,.66); border: 1px solid var(--linea2) }
+.neon .ne-cuenta b { --c: var(--rojo); min-width: 46px; height: 36px; padding: 0 9px; display: grid; place-items: center; border-radius: 999px; font: 800 22px var(--cond); font-variant-numeric: tabular-nums; background: rgba(40,4,12,.5) }
+.neon .ne-cuenta span { font: 600 13px/1.15 var(--sans); color: #dfe0e6; text-align: left }
+.neon .ne-cuenta.sola { padding: 8px 18px }
+.neon .ne-ctas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 340px }
+.neon .ne-btn-prim, .neon .ne-btn-neon { height: 48px; padding: 0 8px; border-radius: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; white-space: nowrap;
+  font: 800 15px var(--cond); letter-spacing: .07em; text-transform: uppercase; text-decoration: none; transition: transform .15s, box-shadow .25s, filter .2s, background .2s }
+.neon .ne-btn-prim { border: 0; background: linear-gradient(180deg, #fff27e, var(--amarillo) 45%, #f2c41f); color: #171200;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 12px 30px -12px rgba(255,210,0,.9), 0 0 24px -6px rgba(255,225,77,.7) }
+.neon .ne-btn-prim:hover { filter: brightness(1.06) }
+.neon .ne-btn-neon { --c: var(--azul); background: rgba(4,10,22,.6); color: #e6f8ff; font-weight: 700; text-shadow: 0 0 10px var(--azul) }
+.neon .ne-btn-neon:hover { background: rgba(62,199,255,.12) }
+.neon .ne-btn-prim:active, .neon .ne-btn-neon:active { transform: scale(.97) }
+.neon .ne-btn-prim svg, .neon .ne-btn-neon svg { width: 17px; height: 17px }
+
+/* --- Franja de confianza -------------------------------------------------------- */
+.neon .ne-confianza { position: relative; z-index: 4; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: -22px 14px 0 }
+.neon .ne-confianza > div { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border-radius: 15px; min-width: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.02)), #0e0e13; border: 1px solid var(--linea) }
+.neon .ne-confianza svg { width: 22px; height: 22px; flex: none; color: var(--c); filter: drop-shadow(0 0 5px var(--c)) }
+.neon .ne-confianza b { display: block; font: 700 14px/1.05 var(--cond); letter-spacing: .03em; text-transform: uppercase }
+.neon .ne-confianza small { display: block; font-size: 11.5px; color: var(--suave); line-height: 1.25; margin-top: 3px }
+
+/* --- Secciones y títulos ---------------------------------------------------------- */
+.neon .ne-seccion { padding: 40px 14px 4px; scroll-margin-top: 90px }
+.neon .ne-titulo { text-align: center; margin-bottom: 18px }
+.neon .ne-titulo .ceja { display: block; font: 700 11.5px var(--cond); letter-spacing: .26em; text-transform: uppercase; color: var(--dorado) }
+.neon .ne-titulo h1, .neon .ne-titulo h2 { margin: 5px 0 0; font: 800 30px/1 var(--cond); text-transform: uppercase; letter-spacing: .02em; text-wrap: balance }
+.neon .ne-titulo p { margin: 8px auto 0; max-width: 52ch; color: var(--suave); font-size: 14px }
+.neon .ne-adorno { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 11px }
+.neon .ne-adorno::before, .neon .ne-adorno::after { content: ""; width: 56px; height: 1px; background: linear-gradient(90deg, transparent, rgba(245,196,81,.85)) }
+.neon .ne-adorno::after { transform: scaleX(-1) }
+.neon .ne-adorno svg { width: 13px; height: 13px; color: var(--dorado); filter: drop-shadow(0 0 4px var(--dorado)) }
+.neon .ne-ver-todo { display: flex; justify-content: center; margin-top: 16px }
+.neon .ne-ver-todo a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--linea2); font: 700 13.5px var(--cond); letter-spacing: .14em; text-transform: uppercase; text-decoration: none; color: #e4e5ea }
+.neon .ne-ver-todo a:hover { border-color: rgba(255,225,77,.7); box-shadow: 0 0 14px -4px rgba(255,225,77,.7) }
+.neon .ne-ver-todo svg { width: 15px; height: 15px }
+
+/* --- Categorías -------------------------------------------------------------------- */
+.neon .ne-cats { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 14px; scrollbar-width: none; margin: -8px -14px -6px; padding: 10px 14px 18px }
+.neon .ne-cats::-webkit-scrollbar { display: none }
+.neon .ne-cat { position: relative; flex: 0 0 42%; scroll-snap-align: start; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; min-height: 150px; padding: 14px; border-radius: 18px; overflow: hidden; text-decoration: none;
+  background: radial-gradient(120% 85% at 85% 100%, color-mix(in srgb, var(--c) 17%, transparent), transparent 62%), #0c0c11; transition: transform .3s var(--salida) }
+.neon .ne-cat:hover { transform: translateY(-3px) }
+.neon .ne-cat b { position: relative; z-index: 1; max-width: 86%; font: 700 18px/1.02 var(--cond); text-transform: uppercase; letter-spacing: .03em; color: color-mix(in srgb, var(--c) 28%, #fff); text-shadow: 0 0 12px color-mix(in srgb, var(--c) 75%, transparent) }
+.neon .ne-cat small { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; font: 600 12.5px var(--sans); color: var(--suave) }
+.neon .ne-cat small svg { width: 14px; height: 14px; transition: transform .25s var(--salida) }
+.neon .ne-cat:hover small svg { transform: translateX(3px) }
+.neon .ne-cat .ico { position: absolute; right: 6px; bottom: 8px; width: 50%; max-width: 92px; height: auto; filter: drop-shadow(0 0 6px var(--c)) }
+.neon .ne-cat[aria-current="page"] { background: radial-gradient(120% 85% at 85% 100%, color-mix(in srgb, var(--c) 30%, transparent), transparent 62%), #12121a }
+.neon .ne-cat:hover .ico { animation: ne-zumbido 1.1s linear }
+@keyframes ne-zumbido { 0%, 100% { opacity: 1 } 8% { opacity: .35 } 11% { opacity: 1 } 26% { opacity: .65 } 29% { opacity: 1 } }
+
+/* --- Productos ---------------------------------------------------------------------- */
+.neon .ne-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.neon .ne-tira { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 14px; scrollbar-width: none; margin: -6px -14px 0; padding: 6px 14px 14px }
+.neon .ne-tira::-webkit-scrollbar { display: none }
+.neon .ne-tira > .ne-prod { flex: 0 0 44%; scroll-snap-align: start }
+@property --mx { syntax: "<percentage>"; inherits: false; initial-value: 50% }
+@property --my { syntax: "<percentage>"; inherits: false; initial-value: 6% }
+.neon .ne-prod { --acento: var(--azul); position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: 20px; border: 1px solid transparent; overflow: hidden;
+  background: linear-gradient(180deg, #15151b, #0b0b0f) padding-box, linear-gradient(165deg, rgba(255,255,255,.18), rgba(255,255,255,.04) 36%, rgba(255,255,255,.02) 68%, color-mix(in srgb, var(--acento) 50%, transparent)) border-box;
+  transition: transform .35s var(--salida), box-shadow .35s }
+.neon .ne-prod:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -22px color-mix(in srgb, var(--acento) 70%, transparent), 0 0 0 1px color-mix(in srgb, var(--acento) 35%, transparent) }
+.neon .ne-foto { position: relative; display: block; aspect-ratio: 1 / 1.04; overflow: hidden; text-decoration: none; transition: --mx .35s, --my .35s;
+  background: radial-gradient(58% 52% at var(--mx) var(--my), rgba(255,244,214,.19), transparent 70%), radial-gradient(70% 38% at 50% 94%, color-mix(in srgb, var(--acento) 24%, transparent), transparent 72%) }
+.neon .ne-foto::before { content: ""; position: absolute; inset: 0; background: conic-gradient(from 180deg at 50% -12%, transparent 158deg, rgba(255,240,210,.08) 170deg, rgba(255,240,210,.13) 180deg, rgba(255,240,210,.08) 190deg, transparent 202deg) }
+.neon .ne-foto::after { content: ""; position: absolute; left: 8%; right: 8%; bottom: 14%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.26), transparent) }
+.neon .ne-vit { position: absolute; z-index: 1; left: 10%; right: 10%; bottom: -14%; height: 112%; display: flex; align-items: flex-end; justify-content: center; transition: transform .45s var(--salida) }
+.neon .ne-vit svg { height: 100%; width: auto; max-width: 100% }
+.neon .ne-vit.plano { left: 18%; right: 18%; bottom: 16%; height: 62% }
+.neon .ne-vit.plano svg { height: 100%; filter: drop-shadow(0 0 14px rgba(255,255,255,.08)) }
+.neon .ne-vit.foto { left: 6%; right: 6%; top: 6%; bottom: 14%; height: auto }
+.neon .ne-vit.foto img { object-fit: contain; -webkit-box-reflect: below 2px linear-gradient(transparent 72%, rgba(255,255,255,.16)) }
+.neon .ne-prod:hover .ne-vit { transform: translateY(-5px) rotate(-3deg) }
+.neon .ne-prod.agotado .ne-vit { opacity: .45; filter: grayscale(1) }
+.neon .ne-ver-mas { position: absolute; z-index: 3; left: 50%; bottom: 10px; padding: 5px 12px; border-radius: 999px; background: rgba(8,8,12,.78); border: 1px solid var(--linea2); font: 700 11.5px var(--cond); letter-spacing: .14em; text-transform: uppercase; color: #e9eaee;
+  opacity: 0; transform: translate(-50%, 6px); transition: opacity .25s, transform .3s var(--salida); pointer-events: none; white-space: nowrap }
+.neon .ne-prod:hover .ne-ver-mas { opacity: 1; transform: translate(-50%, 0) }
+.neon .ne-bola { position: absolute; top: 0; left: 14px; width: 24px; z-index: 2; pointer-events: none; transform-origin: 50% 0; animation: ne-mecer 4.6s ease-in-out infinite alternate; filter: drop-shadow(0 0 5px var(--c)) }
+.neon .ne-bola.der { left: auto; right: 14px; animation-delay: -2.3s }
+@keyframes ne-mecer { from { transform: rotate(-5deg) } to { transform: rotate(5deg) } }
+.neon .ne-marca { position: absolute; top: 12px; right: 12px; z-index: 3; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px 3px; border-radius: 7px; background: rgba(6,6,10,.72);
+  font: 700 11px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; border-width: 1.5px }
+.neon .ne-marca svg { width: 11px; height: 11px }
+.neon .ne-marca.of { --c: var(--rojo); color: #ffd9e0 } .neon .ne-marca.ul { --c: var(--azul); color: #dcf5ff }
+.neon .ne-marca.ag { --c: #8d909a; color: #e4e5ea; box-shadow: none }
+.neon .ne-datos { padding: 2px 14px 14px; display: flex; flex-direction: column; flex: 1; min-width: 0 }
+.neon .ne-nom { margin: 0; font: 700 16px/1.12 var(--cond); letter-spacing: .03em; text-transform: uppercase; min-height: 2.24em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.neon .ne-nom a { text-decoration: none }
+.neon .ne-pres { font-size: 12.5px; color: var(--tenue); margin-top: 2px }
+.neon .ne-precio { margin-top: 8px; display: flex; align-items: flex-start; gap: 2px; font: 800 27px/1 var(--cond); letter-spacing: .01em; font-variant-numeric: tabular-nums }
+.neon .ne-precio .mon { font-size: 15px; margin-top: 3px; color: var(--suave) }
+.neon .ne-antes { margin-top: 4px; font-size: 12px; color: var(--tenue); line-height: 1.3 }
+.neon .ne-antes b, .neon .ne-antes s { color: #ff9aac; font-weight: 600; white-space: nowrap }
+.neon .ne-antes s { color: inherit; font-weight: 400 }
+.neon .ne-control { margin-top: auto; padding-top: 12px }
+.neon .ne-agregar { width: 100%; height: 44px; border: 0; border-radius: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: linear-gradient(180deg, #fff27e, var(--amarillo) 45%, #f2c41f); color: #171200; font: 800 15px var(--cond); letter-spacing: .08em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 10px 22px -12px rgba(255,210,0,.95); transition: transform .12s, box-shadow .25s, filter .2s }
+.neon .ne-agregar:hover { filter: brightness(1.06); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 0 22px -3px rgba(255,225,77,.7) }
+.neon .ne-agregar:active { transform: scale(.96) }
+.neon .ne-agregar svg { width: 15px; height: 15px }
+.neon .ne-agotado { display: flex; align-items: center; justify-content: center; height: 44px; border-radius: 13px; border: 1px dashed var(--linea2); color: var(--tenue); font: 700 13px var(--cond); letter-spacing: .12em; text-transform: uppercase }
+.neon .ne-paso { display: flex; align-items: center; justify-content: space-between; height: 44px; border-radius: 13px; border: 1.5px solid rgba(255,225,77,.85); background: rgba(255,225,77,.06);
+  box-shadow: 0 0 16px -5px rgba(255,225,77,.75), inset 0 0 14px -7px rgba(255,225,77,.95); animation: ne-entra .35s var(--rebote) }
+.neon .ne-paso button { width: 44px; height: 100%; border: 0; background: none; color: var(--amarillo); cursor: pointer; display: grid; place-items: center; border-radius: 12px }
+.neon .ne-paso button:hover { background: rgba(255,225,77,.1) }
+.neon .ne-paso button svg { width: 16px; height: 16px }
+.neon .ne-paso span { font: 800 18px var(--cond); font-variant-numeric: tabular-nums }
+.neon .ne-vacio { grid-column: 1 / -1; padding: 30px 18px; text-align: center; border-radius: 18px; border: 1px dashed var(--linea2); color: var(--suave) }
+.neon .ne-vacio b { display: block; font: 700 19px var(--cond); text-transform: uppercase; letter-spacing: .04em; color: var(--texto); margin-bottom: 4px }
+
+/* --- Combos ------------------------------------------------------------------------- */
+.neon .ne-combos { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 14px; scrollbar-width: none; margin: -10px -14px -6px; padding: 14px 14px 22px }
+.neon .ne-combos::-webkit-scrollbar { display: none }
+.neon .ne-combo { position: relative; flex: 0 0 86%; scroll-snap-align: start; display: flex; flex-direction: column; min-width: 0; border-radius: 22px; overflow: hidden;
+  background: radial-gradient(90% 60% at 50% 22%, color-mix(in srgb, var(--c) 22%, transparent), transparent 65%), repeating-linear-gradient(135deg, rgba(255,255,255,.022) 0 12px, transparent 12px 24px), #0d0a0e }
+.neon .ne-combos > .ne-combo:only-child { flex-basis: 100% }
+.neon .ne-combo .escena { position: relative; height: 196px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden }
+.neon .ne-combo .escena svg { height: 100%; width: auto; max-width: 100% }
+.neon .ne-combo .escena img { object-fit: contain; padding: 12px }
+.neon .ne-combo .info { display: flex; flex-direction: column; flex: 1; padding: 2px 16px 18px }
+.neon .ne-combo h3 { margin: 0 0 10px; font-weight: 400; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.neon .ne-combo h3 .g { font: 400 38px/1 var(--guion) }
+.neon .ne-combo h3 .f { font: 800 34px/1 var(--cond); text-transform: uppercase; letter-spacing: .02em }
+.neon .ne-lista { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 7px }
+.neon .ne-lista li { display: flex; gap: 9px; align-items: flex-start; font-size: 14px; color: #e2e3e8; line-height: 1.3 }
+.neon .ne-lista svg { width: 17px; height: 17px; flex: none; margin-top: 1px; color: var(--menta); filter: drop-shadow(0 0 4px var(--menta)) }
+.neon .ne-combo .fila { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-top: auto }
+.neon .ne-combo .ne-precio { margin: 0; font-size: 34px }
+.neon .ne-combo .ne-antes { margin: 0 0 3px }
+.neon .ne-ahorro { display: inline-flex; align-self: flex-start; margin-top: 10px; padding: 5px 11px 4px; border-radius: 8px; font: 700 13px var(--cond); letter-spacing: .12em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 22%, #fff); background: color-mix(in srgb, var(--c) 12%, #0a0a0e); border-width: 1.5px }
+.neon .ne-combo .ne-control { padding-top: 14px }
+.neon .ne-puntos { display: flex; justify-content: center; gap: 8px; margin-top: 4px }
+.neon .ne-puntos i { width: 7px; height: 7px; border-radius: 4px; background: #34343c; transition: width .35s var(--salida), background .35s }
+.neon .ne-puntos i.activo { width: 22px; background: var(--amarillo); box-shadow: 0 0 8px var(--amarillo) }
+.neon .ne-vale { display: block; margin-top: 12px; font-size: 12px; color: var(--tenue); text-align: center }
+
+/* --- Pedido grande -------------------------------------------------------------------- */
+.neon .ne-grande { --c: var(--verde); margin: 44px 14px 0; padding: 22px 18px; border-radius: 22px; text-align: center; background: radial-gradient(80% 80% at 50% 0%, rgba(37,211,102,.14), transparent 70%), #0b0f0c }
+.neon .ne-grande h2 { margin: 0; font: 800 26px/1.05 var(--cond); text-transform: uppercase; letter-spacing: .02em }
+.neon .ne-grande p { margin: 8px auto 16px; max-width: 46ch; color: var(--suave) }
+
+/* --- Pie -------------------------------------------------------------------------------- */
+.neon .ne-pie { margin-top: 44px; padding: 8px 14px 130px; border-top: 1px solid var(--linea); background: radial-gradient(80% 60% at 50% 0%, rgba(255,59,92,.08), transparent 70%), #08080b }
+.neon .ne-colgante { display: flex; justify-content: center; padding-top: 34px; margin-bottom: 26px }
+.neon .ne-felices { --c: var(--rojo); text-align: center; padding: 16px 30px 14px; border: 2px solid color-mix(in srgb, var(--c) 55%, #fff);
+  box-shadow: 0 0 6px var(--c), 0 0 18px color-mix(in srgb, var(--c) 50%, transparent), inset 0 0 6px color-mix(in srgb, var(--c) 60%, transparent), inset 0 0 20px color-mix(in srgb, var(--c) 16%, transparent), 0 28px 60px -26px rgba(0,0,0,.95) }
+.neon .ne-felices::before, .neon .ne-felices::after { content: ""; position: absolute; bottom: 100%; width: 1px; height: 36px; background: linear-gradient(transparent, #8a8a93) }
+.neon .ne-felices::before { left: 20px } .neon .ne-felices::after { right: 20px }
+.neon .ne-felices b { display: block; font: 400 40px/1 var(--guion) }
+.neon .ne-felices span { display: block; margin-top: 4px; font: 700 13px var(--cond); letter-spacing: .26em; text-transform: uppercase }
+.neon .ne-pie-grid { display: grid; gap: 12px; max-width: 1120px; margin: 0 auto }
+.neon .ne-tarjeta { padding: 16px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)), #0d0d12; border: 1px solid var(--linea); min-width: 0 }
+.neon .ne-tarjeta h3 { margin: 0 0 10px; display: flex; align-items: center; gap: 8px; font: 700 13px var(--cond); letter-spacing: .2em; text-transform: uppercase; color: var(--dorado) }
+.neon .ne-tarjeta h3 svg { width: 16px; height: 16px }
+.neon .ne-tarjeta .gran { font: 700 20px/1.15 var(--cond); letter-spacing: .02em }
+.neon .ne-tarjeta p { margin: 4px 0 0; font-size: 13.5px; color: var(--suave) }
+.neon .ne-tarjeta iframe { display: block; width: 100%; height: 170px; margin-top: 12px; border: 0; border-radius: 12px; filter: invert(.9) hue-rotate(180deg) saturate(.6) brightness(.9) }
+.neon .ne-estado { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; font: 600 13px var(--sans) }
+.neon .ne-estado i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent), 0 0 10px var(--c); animation: ne-latido 2s ease-in-out infinite }
+.neon .ne-estado.si { --c: var(--menta); color: #c9ffe0 } .neon .ne-estado.no { --c: var(--rojo); color: #ffd0d9 } .neon .ne-estado.ul { --c: var(--azul); color: #d4f3ff }
+.neon .ne-estado.ag { --c: #8d909a; color: #d9dae0 }
+@keyframes ne-latido { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 0%, transparent), 0 0 14px var(--c) } }
+.neon .ne-enlace { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; height: 44px; padding: 0 16px; border-radius: 12px; text-decoration: none; font: 700 14px var(--cond); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--texto); border: 1px solid var(--linea2); background: rgba(255,255,255,.04); transition: border-color .2s, box-shadow .2s }
+.neon .ne-enlace:hover { border-color: rgba(62,199,255,.7); box-shadow: 0 0 16px -4px rgba(62,199,255,.7) }
+.neon .ne-enlace.wa { background: linear-gradient(180deg, #38e47e, #1fbf5b); color: #03200e; border-color: transparent }
+.neon .ne-enlace svg { width: 17px; height: 17px }
+.neon .ne-legal { max-width: 1120px; margin: 22px auto 0; padding-top: 16px; border-top: 1px solid var(--linea); font-size: 11.5px; color: var(--tenue); text-align: center; line-height: 1.55 }
+.neon .ne-legal p { margin: 0 }
+.neon .ne-legal span { display: block; margin-top: 8px; color: #6f727c }
+.neon .ne-legal a { color: #6f727c }
+
+/* --- Pedido, mayoría de edad y avisos --------------------------------------------------- */
+.neon .ne-barra { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 45; max-width: 560px; margin: 0 auto; height: 62px; border-radius: 18px; cursor: pointer; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 10px; text-align: left;
+  background: rgba(17,17,23,.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,225,77,.5);
+  box-shadow: 0 18px 40px -14px rgba(0,0,0,.95), 0 0 26px -8px rgba(255,225,77,.65); transform: translateY(180%); transition: transform .5s var(--salida) }
+.neon .ne-barra.ver { transform: none }
+.neon .ne-barra .n { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--amarillo); color: #171200; font: 800 18px var(--cond); box-shadow: 0 0 14px -2px rgba(255,225,77,.8) }
+.neon .ne-barra .txt { flex: 1; min-width: 0; line-height: 1.15 }
+.neon .ne-barra .txt b { display: block; font: 800 16px var(--cond); letter-spacing: .06em; text-transform: uppercase }
+.neon .ne-barra .txt small { color: var(--suave); font-size: 12px }
+.neon .ne-barra .ir { flex: none; height: 44px; padding: 0 14px; border-radius: 13px; display: flex; align-items: center; gap: 6px; background: linear-gradient(180deg, #fff27e, var(--amarillo) 45%, #f2c41f); color: #171200; font: 800 18px var(--cond); font-variant-numeric: tabular-nums }
+.neon .ne-barra .ir svg { width: 16px; height: 16px }
+.neon .ne-capa { position: fixed; inset: 0; z-index: 60 }
+.neon .ne-velo { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(2,2,6,.6); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: ne-aparece .3s both; cursor: pointer }
+@keyframes ne-aparece { from { opacity: 0 } }
+.neon .ne-hoja { position: absolute; left: 0; right: 0; bottom: 0; max-width: 560px; margin: 0 auto; max-height: 92dvh; display: flex; flex-direction: column; background: linear-gradient(180deg, #17171d, #0e0e13);
+  border-radius: 26px 26px 0 0; border-top: 1px solid rgba(255,225,77,.6); box-shadow: 0 -24px 60px -24px rgba(255,210,0,.4); animation: ne-sube .5s var(--salida) both }
+@keyframes ne-sube { from { transform: translateY(100%) } }
+.neon .ne-asa { flex: none; width: 46px; height: 5px; border-radius: 3px; margin: 9px auto 4px; background: #3a3a43 }
+.neon .ne-hoja-cab { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 16px 8px }
+.neon .ne-hoja-cab h2 { margin: 0; font: 800 26px var(--cond); text-transform: uppercase; letter-spacing: .03em }
+.neon .ne-hoja-cab small { color: var(--tenue); font-size: 13px; margin-left: 8px; text-shadow: none; font-weight: 500; letter-spacing: 0; text-transform: none; font-family: var(--sans) }
+.neon .ne-cerrar { flex: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--linea2); background: rgba(255,255,255,.04); cursor: pointer; display: grid; place-items: center; color: var(--suave) }
+.neon .ne-cerrar svg { width: 16px; height: 16px }
+.neon .ne-cuerpo { overflow-y: auto; padding: 0 16px calc(20px + env(safe-area-inset-bottom)); scrollbar-width: thin; scrollbar-color: #33333b transparent }
+.neon .ne-linea { display: grid; grid-template-columns: minmax(0,1fr) auto; row-gap: 6px; column-gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--linea) }
+.neon .ne-linea .nombre { font: 700 15px/1.15 var(--cond); text-transform: uppercase; letter-spacing: .02em; min-width: 0 }
+.neon .ne-linea .nombre small { display: block; font: 500 12px var(--sans); color: var(--tenue); text-transform: none; letter-spacing: 0; margin-top: 2px }
+.neon .ne-linea .tot { font: 800 18px var(--cond); text-align: right; font-variant-numeric: tabular-nums; align-self: start }
+.neon .ne-linea .ne-paso { grid-column: 1 / 3; width: 132px; height: 44px; animation: none }
+.neon .ne-linea.con-mini { grid-template-columns: 44px minmax(0,1fr) auto }
+.neon .ne-linea.con-mini .ne-mini { grid-row: 1 / 3 }
+.neon .ne-linea.con-mini .ne-paso { grid-column: 2 / 4 }
+.neon .ne-mini { width: 44px; height: 60px; border-radius: 12px; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; background: radial-gradient(circle at 50% 25%, rgba(255,255,255,.1), transparent 70%), #0a0a0e; border: 1px solid var(--linea) }
+.neon .ne-mini svg { height: 126%; width: auto; margin-bottom: -26% }
+.neon .ne-mini.plano { align-items: center }
+.neon .ne-mini.plano svg { height: 62%; margin: 0 }
+.neon .ne-rotulo { display: block; margin: 18px 0 8px; font: 700 12px var(--cond); letter-spacing: .2em; text-transform: uppercase; color: var(--tenue) }
+.neon .ne-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 15px; background: #09090c; border: 1px solid var(--linea) }
+.neon .ne-seg button { min-height: 44px; border: 0; border-radius: 11px; background: transparent; color: var(--suave); font: 600 14px var(--sans); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 6px; transition: background .2s, color .2s, box-shadow .2s }
+.neon .ne-seg button svg { width: 16px; height: 16px; flex: none }
+.neon .ne-seg button[aria-checked="true"] { background: linear-gradient(180deg, rgba(62,199,255,.26), rgba(62,199,255,.1)); color: #eaf9ff; box-shadow: inset 0 0 0 1px rgba(62,199,255,.65), 0 0 16px -5px rgba(62,199,255,.85) }
+.neon .ne-campo { display: block; width: 100%; height: 48px; padding: 0 14px; margin-top: 8px; border-radius: 13px; border: 1px solid var(--linea2); background: #09090c; color: var(--texto); font: 16px var(--sans); transition: border-color .2s, box-shadow .2s }
+.neon .ne-campo::placeholder { color: #75787f }
+.neon .ne-campo:focus { outline: none; border-color: rgba(62,199,255,.75); box-shadow: 0 0 0 4px rgba(62,199,255,.16) }
+.neon .ne-nota { margin: 6px 2px 0; font-size: 13px; color: var(--suave) }
+.neon .ne-resumen { margin-top: 18px; padding: 14px 16px; border-radius: 16px; background: #09090c; border: 1px solid var(--linea) }
+.neon .ne-resumen div { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--suave); padding: 3px 0 }
+.neon .ne-resumen div span:last-child { text-align: right; font-variant-numeric: tabular-nums }
+.neon .ne-resumen .total { margin-top: 8px; padding-top: 12px; border-top: 1px dashed var(--linea2); color: var(--texto); font: 800 24px var(--cond); text-transform: uppercase; letter-spacing: .02em }
+.neon .ne-avisos { margin: 14px 0 0; padding: 12px 14px; list-style: none; border-radius: 14px; border: 1px dashed rgba(255,59,92,.6); background: rgba(255,59,92,.06); font-size: 14px; display: grid; gap: 4px }
+.neon .ne-error { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: rgba(255,59,92,.12); color: #ffd0d9; font-weight: 600; font-size: 14px }
+.neon .ne-wa { margin-top: 14px; width: 100%; height: 56px; border: 0; border-radius: 16px; cursor: pointer; display: flex; gap: 10px; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #38e47e, #1fbf5b); color: #03200e; font: 800 18px var(--cond); letter-spacing: .07em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 14px 30px -14px rgba(37,211,102,1); transition: filter .2s, transform .12s; text-decoration: none }
+.neon .ne-wa:hover { filter: brightness(1.06) } .neon .ne-wa:active { transform: scale(.98) }
+.neon .ne-wa:disabled { opacity: .45; cursor: default }
+.neon .ne-wa svg { width: 21px; height: 21px }
+.neon .ne-seguro { display: flex; gap: 6px; align-items: center; justify-content: center; margin: 10px 0 0; font-size: 12px; color: var(--tenue); text-align: center }
+.neon .ne-seguro svg { width: 13px; height: 13px; flex: none }
+.neon .ne-modal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 22px; background: rgba(2,2,6,.62); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: ne-aparece .25s both }
+.neon .ne-modal .caja { width: 100%; max-width: 320px; padding: 26px 20px 18px; text-align: center; border-radius: 22px; background: linear-gradient(180deg, #18181e, #0f0f14); border: 1px solid var(--linea2);
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.95); animation: ne-entra .4s var(--rebote) }
+.neon .ne-sello { --c: var(--amarillo); width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; font: 800 27px var(--cond); background: rgba(30,24,0,.5) }
+.neon .ne-modal h2 { margin: 0 0 6px; font: 800 26px var(--cond); text-transform: uppercase; letter-spacing: .02em }
+.neon .ne-modal p { margin: 0 0 16px; font-size: 14px; color: var(--suave) }
+.neon .ne-modal .si, .neon .ne-modal .no { width: 100%; height: 48px; border: 0; border-radius: 13px; cursor: pointer; font: 800 16px var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-top: 8px }
+.neon .ne-modal .si { background: linear-gradient(180deg, #fff27e, var(--amarillo) 45%, #f2c41f); color: #171200 }
+.neon .ne-modal .no { background: #1d1d24; color: var(--texto) }
+.neon .ne-modal small { display: block; margin-top: 12px; font-size: 11px; color: var(--tenue) }
+.neon .ne-aviso { position: fixed; left: 50%; top: calc(var(--alto-cab, 120px) + 10px); z-index: 50; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px); padding: 9px 15px; border-radius: 999px;
+  background: rgba(13,13,19,.94); border: 1px solid rgba(57,255,136,.6); box-shadow: 0 0 20px -6px rgba(57,255,136,.85), 0 14px 30px -12px rgba(0,0,0,.95);
+  font: 600 13px var(--sans); white-space: nowrap; opacity: 0; pointer-events: none; transform: translate(-50%, -12px); transition: opacity .25s, transform .4s var(--salida) }
+.neon .ne-aviso.ver { opacity: 1; transform: translate(-50%, 0) }
+.neon .ne-aviso span { overflow: hidden; text-overflow: ellipsis }
+.neon .ne-aviso svg { width: 16px; height: 16px; flex: none; color: var(--menta) }
+.ne-volador { position: fixed; z-index: 1000; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; pointer-events: none; display: grid; place-items: center;
+  background: radial-gradient(circle, #fffbe0 0%, #ffe14d 45%, rgba(255,225,77,0) 72%); font: 800 13px var(--font-barlow-cond), sans-serif; color: #241c00 }
+
+/* --- Buscador ------------------------------------------------------------------------- */
+.neon .ne-busqueda { position: fixed; inset: 0; z-index: 65; display: flex; flex-direction: column; background: rgba(7,7,10,.97); backdrop-filter: blur(10px); animation: ne-aparece .2s both }
+.neon .ne-busqueda .arriba { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--linea); max-width: 760px; width: 100%; margin: 0 auto }
+.neon .ne-busqueda .arriba .ne-buscar { margin: 0; flex: 1; width: auto }
+.neon .ne-busqueda input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; outline: none; font-size: 16px; color: var(--texto) }
+.neon .ne-busqueda ul { flex: 1; overflow-y: auto; list-style: none; margin: 0 auto; padding: 4px 16px 110px; max-width: 760px; width: 100% }
+.neon .ne-busqueda li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--linea) }
+.neon .ne-busqueda li a { text-decoration: none; min-width: 0 }
+.neon .ne-busqueda li b { display: block; font: 700 16px/1.15 var(--cond); text-transform: uppercase; letter-spacing: .02em }
+.neon .ne-busqueda li small { color: var(--tenue); font-size: 12.5px }
+.neon .ne-busqueda li .ne-precio { margin: 0; font-size: 22px }
+.neon .ne-busqueda li .ne-control { grid-column: 1 / -1; padding: 0; max-width: 200px }
+.neon .ne-busqueda .nada { padding: 40px 10px; text-align: center; color: var(--suave); border: 0 }
+
+/* --- Página del producto ---------------------------------------------------------------- */
+.neon .ne-miga { display: inline-flex; align-items: center; gap: 6px; margin: 14px 14px 0; min-height: 44px; font: 700 13px var(--cond); letter-spacing: .14em; text-transform: uppercase; text-decoration: none; color: var(--suave) }
+.neon .ne-miga svg { width: 15px; height: 15px; transform: scaleX(-1) }
+.neon .ne-ficha { display: grid; gap: 0; margin: 4px 14px 0; border-radius: 26px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--acento) 55%, transparent); background: linear-gradient(180deg, #15151b, #0d0d12);
+  box-shadow: 0 30px 80px -40px color-mix(in srgb, var(--acento) 60%, transparent) }
+.neon .ne-ficha-foto { position: relative; height: 330px; overflow: hidden;
+  background: radial-gradient(55% 62% at 50% 0%, rgba(255,244,214,.22), transparent 70%), radial-gradient(70% 40% at 50% 92%, color-mix(in srgb, var(--acento) 32%, transparent), transparent 72%), #0b0b10 }
+.neon .ne-ficha-foto::before { content: ""; position: absolute; inset: 0; background: conic-gradient(from 180deg at 50% -12%, transparent 160deg, rgba(255,240,210,.09) 171deg, rgba(255,240,210,.15) 180deg, rgba(255,240,210,.09) 189deg, transparent 200deg) }
+.neon .ne-ficha-foto::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: 14%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent) }
+.neon .ne-ficha-foto .ne-vit { left: 20%; right: 20%; animation: ne-subir .6s var(--salida) both }
+.neon .ne-ficha-foto .ne-vit.foto { left: 8%; right: 8%; top: 7%; bottom: 14%; height: auto }
+.neon .ne-ficha-foto .ne-marca { top: 16px; left: 16px; right: auto }
+.neon .ne-ficha.agotado .ne-vit { opacity: .45; filter: grayscale(1) }
+@keyframes ne-subir { from { opacity: 0; transform: translateY(18px) } }
+.neon .ne-info { padding: 16px 16px 22px }
+.neon .ne-info .tipo { display: block; font: 700 11.5px var(--cond); letter-spacing: .26em; text-transform: uppercase; color: var(--dorado); text-decoration: none }
+.neon .ne-info h1 { margin: 4px 0 2px; font: 800 30px/1.02 var(--cond); text-transform: uppercase; letter-spacing: .02em; text-wrap: balance }
+.neon .ne-info .desc { margin: 12px 0 0; color: #d6d7dd; font-size: 15px; line-height: 1.6 }
+.neon .ne-fila-p { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap }
+.neon .ne-fila-p .ne-precio { margin: 0; font-size: 38px }
+.neon .ne-fila-p .ne-estado { margin: 0 }
+.neon .ne-pastillas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px }
+.neon .ne-pastillas span { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--linea2); font: 600 12.5px var(--sans); color: #dfe0e6; background: rgba(255,255,255,.03) }
+.neon .ne-nota-licor { margin: 14px 0 0; font-size: 11.5px; color: var(--tenue); line-height: 1.5 }
+.neon .ne-barra-agregar { position: fixed; inset: auto 0 0 0; z-index: 45; padding: 24px 12px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(0deg, #07070a 55%, transparent) }
+.neon .ne-barra-agregar .dentro { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px }
+.neon .ne-barra-agregar .ne-paso { height: 54px; animation: none; padding: 0 2px }
+.neon .ne-barra-agregar .ne-paso button { height: 50px }
+.neon .ne-barra-agregar .ne-paso span { min-width: 28px; text-align: center }
+.neon .ne-barra-agregar .ne-agregar { height: 54px; flex-direction: column; gap: 0; font-size: 17px; line-height: 1.1 }
+.neon .ne-barra-agregar .ne-agregar small { font: 600 11.5px var(--sans); letter-spacing: 0; text-transform: none; opacity: .75 }
+.neon .ne-barra-agregar .ne-agotado { grid-column: 1 / -1; height: 54px; background: #15151b }
+
+/* --- Categoría ---------------------------------------------------------------------------- */
+.neon .ne-cabeza-cat { padding: 26px 14px 4px; text-align: center }
+
+/* --- Tienda en preparación ------------------------------------------------------------- */
+.neon .ne-prep { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center }
+.neon .ne-prep .nombre { display: block; font: 400 64px/1 var(--guion) }
+.neon .ne-prep .lema { display: block; margin-top: 6px; font: 700 12px var(--cond); letter-spacing: .2em; text-transform: uppercase }
+.neon .ne-prep p { margin: 26px auto 0; max-width: 34ch; color: var(--suave) }
+.neon .ne-prep a { display: inline-block; margin-top: 30px; font-size: 12px; color: var(--tenue) }
+
+/* --- Computador ------------------------------------------------------------------------ */
+@media (min-width: 900px) {
+  .neon .ne-fila { display: grid; grid-template-columns: 1fr minmax(0, 470px) 1fr; padding: 18px 40px 8px; gap: 24px }
+  .neon .ne-logo { justify-self: start }
+  .neon .ne-logo .nombre { font-size: 50px }
+  .neon .ne-logo .lema { font-size: 11px }
+  .neon .ne-logo .gorro { width: 36px; left: -8px; top: -15px }
+  .neon .ne-cab.compacto .ne-logo .nombre { font-size: 40px }
+  .neon .ne-busca-caja { order: 0 }
+  .neon .ne-cab.escondido .ne-busca-caja { display: block }
+  .neon .ne-fila .ne-buscar { margin: 0; width: 100% }
+  .neon .ne-acciones { justify-self: end; gap: 18px }
+  .neon .ne-tel { display: inline-flex; align-items: center; gap: 8px; color: #dfe0e6; text-decoration: none; font: 700 16px var(--cond); letter-spacing: .06em }
+  .neon .ne-tel svg { width: 18px; height: 18px; color: var(--verde) }
+  .neon .ne-carro { padding: 0 16px 0 14px; height: 48px }
+  .neon .ne-carro .etq { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.05 }
+  .neon .ne-carro .etq small { font: 600 11px var(--sans); color: var(--tenue) }
+  .neon .ne-carro .etq b { font: 800 17px var(--cond); font-variant-numeric: tabular-nums }
+  .neon .ne-plegable, .neon .ne-lupa, .neon .ne-cab.escondido .ne-lupa { display: none }
+  .neon .ne-menu { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 30px; padding: 2px 40px 10px }
+  .neon .ne-menu a { position: relative; padding: 7px 0; text-decoration: none; font: 700 16px var(--cond); letter-spacing: .08em; text-transform: uppercase; color: #e4e5ea; transition: color .2s, text-shadow .2s }
+  .neon .ne-menu a::after { content: ""; position: absolute; left: 8%; right: 8%; bottom: 0; height: 2px; border-radius: 2px; background: var(--amarillo); box-shadow: 0 0 10px var(--amarillo); transform: scaleX(0); transition: transform .35s var(--salida) }
+  .neon .ne-menu a[aria-current="page"] { color: #fff8d6; text-shadow: 0 0 12px rgba(255,225,77,.75) }
+  .neon .ne-menu a[aria-current="page"]::after, .neon .ne-menu a:hover::after { transform: scaleX(1) }
+  .neon .ne-portada { height: 640px }
+  .neon .ne-hero { padding-bottom: 92px; gap: 18px }
+  .neon .ne-placa { padding: 24px 56px 26px; border-radius: 22px; background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.015) 60%), rgba(7,7,14,.62) }
+  .neon .ne-placa > i { width: 9px; height: 9px }
+  .neon .ne-placa .ceja { font-size: 14px }
+  .neon .ne-placa h2 .g { font-size: 70px; transform: rotate(-5deg) translateX(-40px); margin-bottom: -10px }
+  .neon .ne-placa h2 .f { font-size: 146px }
+  .neon .ne-placa p { font-size: 23px; margin-top: 12px }
+  .neon .ne-cuenta b { height: 42px; min-width: 56px; font-size: 27px }
+  .neon .ne-cuenta span { font-size: 15px }
+  .neon .ne-ctas { display: flex; width: auto; max-width: none }
+  .neon .ne-btn-prim, .neon .ne-btn-neon { height: 56px; padding: 0 30px; font-size: 19px }
+  .neon .ne-abierto { top: 34px; right: 56px; padding: 8px 16px }
+  .neon .ne-abierto b { font-size: 22px }
+  .neon .ne-abierto small { font-size: 12px }
+  .neon .ne-confianza { grid-template-columns: repeat(4, 1fr); gap: 0; max-width: 1120px; margin: -58px auto 0; border-radius: 20px; background: rgba(14,14,19,.86); border: 1px solid var(--linea2);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 34px 70px -34px rgba(0,0,0,.95) }
+  .neon .ne-confianza > div { background: none; border: 0; border-radius: 0; padding: 22px 24px; gap: 14px }
+  .neon .ne-confianza > div + div { border-left: 1px solid var(--linea) }
+  .neon .ne-confianza svg { width: 28px; height: 28px }
+  .neon .ne-confianza b { font-size: 17px }
+  .neon .ne-confianza small { font-size: 13px }
+  .neon .ne-seccion { padding: 80px 40px 8px; scroll-margin-top: 140px }
+  .neon .ne-titulo { margin-bottom: 26px }
+  .neon .ne-titulo .ceja { font-size: 13px }
+  .neon .ne-titulo h1, .neon .ne-titulo h2 { font-size: 44px }
+  .neon .ne-cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; overflow: visible; margin: 0; padding: 4px 0 0 }
+  .neon .ne-cat { min-height: 180px; padding: 20px }
+  .neon .ne-cat b { font-size: 24px }
+  .neon .ne-cat .ico { width: 44%; max-width: 116px; right: 12px; bottom: 14px }
+  .neon .ne-grid { grid-template-columns: repeat(4, 1fr); gap: 20px }
+  .neon .ne-tira { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; overflow: visible; margin: 0; padding: 0 }
+  .neon .ne-tira > .ne-prod:nth-child(n+5) { display: none }
+  .neon .ne-nom { font-size: 18px }
+  .neon .ne-precio { font-size: 31px }
+  .neon .ne-datos { padding: 4px 18px 18px }
+  .neon .ne-combos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; overflow: visible; margin: 0; padding: 4px 0 0 }
+  .neon .ne-combos > .ne-combo:only-child { grid-column: 1 / -1; max-width: 560px; justify-self: center; width: 100% }
+  .neon .ne-combo .escena { height: 236px }
+  .neon .ne-combo .info { padding: 4px 22px 22px }
+  .neon .ne-combo h3 .g { font-size: 46px }
+  .neon .ne-combo h3 .f { font-size: 40px }
+  .neon .ne-combo .ne-precio { font-size: 38px }
+  .neon .ne-puntos { display: none }
+  .neon .ne-grande { max-width: 1120px; margin: 80px auto 0; padding: 34px }
+  .neon .ne-grande h2 { font-size: 34px }
+  .neon .ne-pie { padding: 10px 40px 40px; margin-top: 80px }
+  .neon .ne-felices b { font-size: 56px }
+  .neon .ne-pie-grid { grid-template-columns: repeat(3, 1fr); gap: 20px }
+  .neon .ne-tarjeta { padding: 22px }
+  .neon .ne-barra { display: none }
+  .neon .ne-hoja { top: 0; bottom: 0; left: auto; right: 0; max-width: none; width: 440px; max-height: none; border-radius: 26px 0 0 26px; border: 0; border-left: 1px solid rgba(255,225,77,.55); animation-name: ne-lado }
+  @keyframes ne-lado { from { transform: translateX(100%) } }
+  .neon .ne-asa { display: none }
+  .neon .ne-hoja-cab { padding-top: 18px }
+  .neon .ne-miga { margin: 26px auto 0; display: flex; width: max-content; max-width: 1120px }
+  .neon .ne-ficha { grid-template-columns: 1fr 1fr; max-width: 1120px; margin: 8px auto 0 }
+  .neon .ne-ficha-foto { height: auto; min-height: 560px }
+  .neon .ne-info { padding: 44px 44px 36px 40px }
+  .neon .ne-info h1 { font-size: 44px }
+  .neon .ne-cabeza-cat { padding-top: 46px }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon *, .neon *::before, .neon *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important }
+  .neon .ne-bokeh { display: none }
+  .neon .ne-calle, .neon .ne-hero { transform: none !important }
+}
