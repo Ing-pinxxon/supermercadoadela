@@ -57,6 +57,14 @@ export function middleware(peticion: NextRequest) {
     return NextResponse.next();
   }
 
+  // Una web publicada sin la clave configurada no deja entrar a nadie.
+  if (modo !== "todo" && !process.env.APP_PIN) {
+    return new NextResponse("La administración está cerrada: falta configurar APP_PIN en Vercel.", {
+      status: 503,
+      headers: { "X-Robots-Tag": "noindex, nofollow", "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
   // De aquí para abajo es la administración: Google no la indexa.
   const noIndexar = (r: NextResponse) => {
     r.headers.set("X-Robots-Tag", "noindex, nofollow");

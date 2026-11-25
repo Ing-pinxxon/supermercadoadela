@@ -12,11 +12,14 @@
  * la tienda no puede fabricarse una sesión de administrador. La comparación es
  * de tiempo constante para no filtrar la clave carácter por carácter.
  *
- * Si no hay `APP_PIN`, la app queda abierta y todo el mundo es administrador:
- * es el modo de desarrollo local, y así `npm run dev` sigue siendo usable.
+ * Si no hay `APP_PIN`, en el computador (sin `SITIO`) la app queda abierta y
+ * todo el mundo es administrador: es el modo de desarrollo, y así `npm run dev`
+ * sigue siendo usable. En una web publicada (`SITIO=tienda` o `SITIO=app`) es
+ * al revés: sin clave configurada nadie entra (se falla cerrado, no abierto).
  */
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { sitio } from "@/lib/sitio";
 
 export const COOKIE = "adela_pin";
 
@@ -40,7 +43,7 @@ export function rolDe(cookie: string | undefined): Rol {
   const tienda = process.env.APP_PIN;
   const admin = process.env.APP_PIN_ADMIN;
 
-  if (!tienda) return "abierto";
+  if (!tienda) return sitio() === "todo" ? "abierto" : "usuario";
   if (!cookie) return "usuario";
   if (admin && igual(cookie, admin)) return "admin";
   // Sin clave de administrador configurada no hay dos roles que separar: quien
@@ -74,7 +77,7 @@ export function rutaSegura(valor: string | undefined): string | null {
 /** True si la cookie sirve para entrar (cualquiera de las dos claves). */
 export function puedeEntrar(cookie: string | undefined): boolean {
   const tienda = process.env.APP_PIN;
-  if (!tienda) return true;
+  if (!tienda) return sitio() === "todo";
   if (!cookie) return false;
   const admin = process.env.APP_PIN_ADMIN;
   return igual(cookie, tienda) || (Boolean(admin) && igual(cookie, admin!));
